@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_task_form2_inherit_rab_dimensi" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.rab.dimensi</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <!-- Add dimension fields after the task_properties field -->
+             <xpath expr="//field[@name='task_properties']" position="after">
+
+                <!-- 1. PRODUK / BAHAN -->
+                <group string="Produk / Bahan">
+                    <field name="product_id" options="{'no_create': True}" domain="[('categ_id.name','=','Material')]"/>
+                    <field name="massa_jenis" readonly="1"/>
+                </group>
+
+                <!-- 2. DIMENSI PEKERJAAN -->
+                <group string="Dimensi Pekerjaan">
+                    <group>
+                        <field name="panjang"/>
+                        <field name="lebar"/>
+                    </group>
+                    <group>
+                        <field name="tebal"/>
+                        <field name="qty"/>
+                    </group>
+                </group>
+
+                <!-- 3. ESTIMASI PEKERJAAN -->
+                <group string="Estimasi Pekerjaan">
+                    <field name="weight" readonly="1"/>
+                    <field name="panjang_las" readonly="1"/>
+                </group>
+
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

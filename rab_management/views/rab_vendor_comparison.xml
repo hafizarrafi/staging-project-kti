@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_rab_vendor_comparison_tree" model="ir.ui.view">
+        <field name="name">rab.vendor.comparison.tree</field>
+        <field name="model">rab.vendor.comparison</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+
+              <!-- CORE -->
+              <field name="vendor_id"/>
+              <field name="price"/>
+
+              <field name="last_purchase_price"
+                     string="Last Purchase"
+                     readonly="1"
+                     class="text-muted"/>
+
+              <field name="negotiation_price"
+                     string="Harga Nego"
+                     readonly="
+                            vendor_state != 'negotiation'
+                            or (source_type == 'accounting' and not has_so_confirmed)
+                     "/>
+
+              <!-- SUPPORT FIELDS -->
+              <field name="vendor_state" column_invisible="1"/>
+              <field name="has_so_confirmed" column_invisible="1"/>
+              <field name="source_type" column_invisible="1"/>
+
+              <!-- STATUS -->
+              <field name="vendor_state"
+                     widget="badge"
+                     readonly="1"
+                     decoration-success="vendor_state == 'final'"
+                     decoration-warning="vendor_state == 'negotiation'"
+                     decoration-muted="vendor_state == 'draft'"
+                     decoration-danger="vendor_state == 'cancelled'"/>
+
+              <!-- ACTIONS -->
+
+              <!-- MASUK NEGOSIASI -->
+              <button name="action_set_negotiation"
+                     type="object"
+                     string="Masuk Negosiasi"
+                     class="btn-secondary btn-sm"
+                     invisible="
+                            vendor_state != 'draft'
+                            or (source_type == 'accounting' and not has_so_confirmed)
+                     "/>
+
+              <!-- GUNAKAN HARGA -->
+              <button name="action_use_for_pricing"
+                     type="object"
+                     string="Gunakan Harga"
+                     class="btn-primary btn-sm"
+                     invisible="
+                            source_type == 'project'
+                            or is_used_for_pricing
+                            or vendor_state in ('final','cancelled')
+                     "/>
+
+              <!-- PILIH FINAL -->
+              <button name="action_set_final"
+                     type="object"
+                     string="Pilih Final"
+                     class="btn-success btn-sm"
+                     context="{'force_save': True}"
+                     invisible="
+                            vendor_state not in ('draft','negotiation','cancelled')
+                            or (source_type == 'accounting' and not has_so_confirmed)
+                     "/>
+
+              <!-- RESET FINAL -->
+              <button name="action_reset_final"
+                     type="object"
+                     string="Reset Final"
+                     class="btn-danger btn-sm"
+                     confirm="Batalkan vendor final?"
+                     invisible="vendor_state != 'final'"/>
+
+              </list>
+
+        </field>
+    </record>
+
+</odoo>

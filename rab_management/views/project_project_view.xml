@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <odoo>
+    
+
+    <record id="view_project_project_form_inherit_rab" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.rab</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+
+                <button
+                    name="action_create_rab_from_material"
+                    type="object"
+                    string="Create RAB"
+                    class="btn-primary"
+                    invisible="rab_id != False"
+                />
+                
+                <button
+                    name="action_create_rab_from_material"
+                    type="object"
+                    string="Create RAB"
+                    class="btn-secondary"
+                    invisible="rab_id == False"
+                />
+
+                <button
+                    name="action_create_sale_order"
+                    type="object"
+                    string="Create SO"
+                    class="btn-primary"
+                    invisible="sale_order_id != False"
+                />
+                
+                <button
+                    name="action_create_sale_order"
+                    type="object"
+                    string="Create SO"
+                    class="btn-secondary"
+                    invisible="sale_order_id == False"
+                />
+
+            </xpath>
+            <!-- Add RAB field after partner_id -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="can_access_rab" invisible="1"/>
+                <field name="can_access_so" invisible="1"/>
+                
+                <!-- untuk yang berhak akses rab -->
+                <field name="rab_id" readonly="1" invisible="not can_access_rab"/>
+                <field name="rab_id" readonly="1" options="{'no_open': True}" invisible="can_access_rab"/>
+                
+                <!-- Suntuk yang berhak akses so -->
+                <field name="sale_order_id" readonly="1" invisible="not can_access_so"/>
+                <field name="sale_order_id" readonly="1" options="{'no_open': True}" invisible="can_access_so"/>
+            </xpath>
+            
+           <xpath expr="//page[@name='description']" position="before">
+                <page string="Summary" name="summary">
+                    <group>
+                        <group string="Ringkasan Biaya">
+                            <field name="currency_id" invisible="1"/>
+                            <label for="total_material" string="1. Material"/>
+                            <div>
+                                <field name="total_material" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+                            <label for="total_equipment" string="2. Equipment &amp; Tools"/>
+                            <div>
+                                <field name="total_equipment" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_manpower" string="3. Man Power"/>
+                            <div>
+                                <field name="total_manpower" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_operasional" string="4. Operasional"/>
+                            <div>
+                                <field name="total_operasional" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_mobdemob" string="5. Mob Demob"/>
+                            <div>
+                                <field name="total_mobdemob" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_kawat_las" string="6. Kawat las"/>
+                            <div>
+                                <field name="total_kawat_las" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_oksigen" string="7. Oksigen"/>
+                            <div>
+                                <field name="total_oksigen" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_lpg" string="8. LPG"/>
+                            <div>
+                                <field name="total_lpg" widget="monetary" class="oe_inline"/>
+                            </div>
+                        </group>
+                        <group string="SO &amp; Margin">
+                            <label for="so_ditagihkan" string="SO Ditagihkan"/>
+                            <div>
+                                <field name="so_ditagihkan" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+                            <label for="total_margin" string="Total Margin"/>
+                            <div>
+                                <field name="total_margin" class="oe_inline" readonly="1"/> %
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- tak pindah kesini total calc nya -->
+                    <group string="Total Calculations">
+                        <group>
+                            <field name="total_panjang_las" readonly="1"/>
+                            <field name="total_weight" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_estimasi_replating" readonly="1" widget="monetary"/>
+                            <field name="sub_total_summary" string="Total Estimasi Biaya" readonly="1" widget="monetary"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+           <xpath expr="//page[@name='summary']" position="after">
+                <page string="Material Project" name="material_project">
+                        <button
+                            name="action_sync_project_material"
+                            type="object"
+                            string="Recalculate Material"
+                            class="btn-primary"
+                            invisible="rab_id != False"
+                        />
+
+
+                    <field name="material_master_ids"
+                        mode="list"
+                        views="[(false, 'list')]"/>
+                </page>
+            </xpath>
+
+           <xpath expr="//page[@name='material_project']" position="after">
+                <page string="Equipment &amp; Tools" name="equipment_tools">
+                    <field name="equipment_master_ids"
+                        mode="list"
+                        views="[(false, 'list')]"/>
+                </page>
+                <page string="Kebutuhan Kawat Las" name="kawat_las">
+                    <group>
+                        <group string="Input Parameter">
+                            <field name="kawat_las_product_id"/>
+                            <field name="kawat_las_tebal_material"/>
+                            <field name="total_panjang_las" string="Panjang Las (Project)" readonly="1"/>
+                            <field name="kawat_las_luas_bevel"/>
+                            <field name="kawat_las_double_bevel"/>
+                        </group>
+                        <group string="Konstanta &amp; Volume">
+                            <field name="kawat_las_berat_massa_jenis"/>
+                            <field name="kawat_las_eff_kawat"/>
+                            <field name="kawat_las_volume"/>
+                            <field name="kawat_las_kebutuhan_kg"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Kebutuhan Pembelian">
+                            <field name="kawat_las_stok_site"/>
+                            <field name="kawat_las_berat_per_dus"/>
+                            <field name="kawat_las_kebutuhan_dus"/>
+                        </group>
+                        <group string="Estimasi Biaya">
+                            <field name="kawat_las_harga_satuan"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="kawat_las_total_harga" widget="monetary"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+
+
+        </field>
+    </record>
+</odoo>
