@@ -513,11 +513,11 @@ class ProjectProject(models.Model):
         self.ensure_one()
 
         additional_items = (self.additional_material_ids + self.additional_equipment_ids).filtered(
-            lambda r: r.qty_beli > 0 and not r.is_converted
+            lambda r: not r.is_converted
         )
 
         if not additional_items:
-            raise UserError("Tidak ada item additional dengan Qty Beli > 0 yang belum diproses.")
+            raise UserError("Tidak ada item additional yang belum diproses.")
 
         if not self.partner_id:
             raise UserError("Project harus memiliki Customer sebelum membuat RAB.")
