@@ -40,14 +40,23 @@ class ProjectTask(models.Model):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        if 'job_type' in fields_list and self.env.context.get('default_parent_id'):
-            parent = self.env['project.task'].browse(self.env.context.get('default_parent_id'))
+        
+        # Prioritize context for parent_id
+        parent_id = self.env.context.get('default_parent_id') or self.env.context.get('parent_id')
+        
+        # Fallback to active_id if we are clearly in a subtask creation context from a task form
+        if not parent_id and self.env.context.get('active_model') == 'project.task':
+            parent_id = self.env.context.get('active_id')
+            
+        if parent_id:
+            parent = self.env['project.task'].browse(parent_id)
             if parent.exists():
                 res['job_type'] = parent.job_type
         return res
 
     @api.onchange('parent_id')
     def _onchange_parent_id_job_type(self):
+        # Only set if it's a new record and parent is set
         if self.parent_id and not self._origin:
             self.job_type = self.parent_id.job_type
 
