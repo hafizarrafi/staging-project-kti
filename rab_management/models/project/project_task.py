@@ -37,6 +37,20 @@ class ProjectTask(models.Model):
         required=True
     )
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'job_type' in fields_list and self.env.context.get('default_parent_id'):
+            parent = self.env['project.task'].browse(self.env.context.get('default_parent_id'))
+            if parent.exists():
+                res['job_type'] = parent.job_type
+        return res
+
+    @api.onchange('parent_id')
+    def _onchange_parent_id_job_type(self):
+        if self.parent_id and not self._origin:
+            self.job_type = self.parent_id.job_type
+
 
 
     panjang = fields.Float(string='Panjang', digits=(16, 2))
