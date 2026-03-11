@@ -59,6 +59,7 @@ class ProjectAdditionalPurchase(models.Model):
         string='Total Qty Dibutuhkan',
         compute='_compute_total_qty',
         store=True,
+        readonly=False,
         digits=(16, 2)
     )
 

@@ -15,7 +15,7 @@
             <xpath expr="//page[@name='sub_tasks_page']//field[@name='child_ids']/list/field[@name='name']"
                    position="after">
 
-                <!-- <field name="job_type" optional="show"/> -->
+                <field name="job_type" column_invisible="True"/>
                 <field name="product_id" optional="show"/>
                 <field name="panjang" optional="show"/>
                 <field name="lebar" optional="show"/>
