@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_package_view_form_inherit_fastindo" model="ir.ui.view">
+        <field name="name">stock.package.form.inherit.fastindo</field>
+        <field name="model">stock.package</field>
+        <field name="inherit_id" ref="stock.stock_package_view_form"/>
+        <field name="arch" type="xml">
+            <field name="contained_quant_ids" position="after">
+                <separator string="Details / Operations" invisible="not move_line_ids"/>
+                <field name="move_line_ids" readonly="1" invisible="not move_line_ids">
+                    <list>
+                        <field name="product_id"/>
+                        <field name="quantity" string="Packed Qty"/>
+                        <field name="product_uom_id" groups="uom.group_uom"/>
+                        <field name="lot_id" groups="stock.group_production_lot"/>
+                        <field name="state" column_invisible="True"/>
+                    </list>
+                </field>
+            </field>
+        </field>
+    </record>
+</odoo>

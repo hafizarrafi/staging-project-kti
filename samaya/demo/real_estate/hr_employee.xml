@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<odoo noupdate="1">
+    <!-- Real Estate employees use separate department and different IDs to avoid conflicts with construction employees -->
+    <record id="re_hr_employee_4" model="hr.employee">
+        <field name="name">David Miller (RE Agent)</field>
+        <field name="image_1920" type="base64" file="samaya/static/src/binary/real_estate_hr_employee/2-image_1920"/>
+        <field name="department_id" ref="re_hr_department_2"/>
+        <field name="address_id" ref="base.main_partner"/>
+        <field name="work_phone">+1 650-691-3278</field>
+        <field name="work_contact_id" ref="re_res_partner_90"/>
+        <field name="work_email">david.miller.re@yourcompany.example.com</field>
+        <field name="parent_id" ref="hr.employee_admin"/>
+        <field name="coach_id" ref="hr.employee_admin"/>
+    </record>
+    <record id="re_hr_employee_5" model="hr.employee">
+        <field name="name">Jessica Rodriguez (RE Agent)</field>
+        <field name="image_1920" type="base64" file="samaya/static/src/binary/real_estate_hr_employee/3-image_1920"/>
+        <field name="department_id" ref="re_hr_department_2"/>
+        <field name="address_id" ref="base.main_partner"/>
+        <field name="work_phone">+1 650-691-3279</field>
+        <field name="work_contact_id" ref="re_res_partner_91"/>
+        <field name="work_email">jessica.rodriguez.re@yourcompany.example.com</field>
+        <field name="parent_id" ref="hr.employee_admin"/>
+        <field name="coach_id" ref="hr.employee_admin"/>
+    </record>
+    <record id="re_hr_employee_3" model="hr.employee">
+        <field name="name">Michael Demo (RE Agent)</field>
+        <field name="image_1920" type="base64" file="samaya/static/src/binary/real_estate_hr_employee/4-image_1920"/>
+        <field name="department_id" ref="re_hr_department_2"/>
+        <field name="job_title">Real Estate Agent</field>
+        <field name="address_id" ref="base.main_partner"/>
+        <field name="work_phone">+1 650-691-3280</field>
+        <field name="work_email">michael.demo.re@yourcompany.example.com</field>
+        <field name="parent_id" ref="hr.employee_admin"/>
+        <field name="coach_id" ref="hr.employee_admin"/>
+    </record>
+    <record id="re_hr_employee_6" model="hr.employee">
+        <field name="name">Robert Wilson (RE Agent)</field>
+        <field name="image_1920" type="base64" file="samaya/static/src/binary/real_estate_hr_employee/5-image_1920"/>
+        <field name="department_id" ref="re_hr_department_2"/>
+        <field name="address_id" ref="base.main_partner"/>
+        <field name="work_phone">+1 650-691-3281</field>
+        <field name="work_contact_id" ref="re_res_partner_29"/>
+        <field name="work_email">robert.wilson.re@yourcompany.example.com</field>
+        <field name="parent_id" ref="hr.employee_admin"/>
+        <field name="coach_id" ref="hr.employee_admin"/>
+    </record>
+    <record id="re_hr_employee_2" model="hr.employee">
+        <field name="name">Sarah Thompson (RE Agent)</field>
+        <field name="image_1920" type="base64" file="samaya/static/src/binary/real_estate_hr_employee/6-image_1920"/>
+        <field name="department_id" ref="re_hr_department_2"/>
+        <field name="address_id" ref="base.main_partner"/>
+        <field name="work_phone">+1 650-691-3282</field>
+        <field name="work_contact_id" ref="re_res_partner_30"/>
+        <field name="work_email">sarah.thompson.re@yourcompany.example.com</field>
+        <field name="parent_id" ref="hr.employee_admin"/>
+        <field name="coach_id" ref="hr.employee_admin"/>
+    </record>
+</odoo>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit_uom_context" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.uom.context</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

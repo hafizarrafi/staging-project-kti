@@ -1,0 +1,18 @@
+<odoo>
+    <record id="view_project_additional_purchase_list" model="ir.ui.view">
+        <field name="name">project.additional.purchase.list</field>
+        <field name="model">project.additional.purchase</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="product_id" readonly="id" options="{'no_open': True}"/>
+                <field name="total_qty"/>
+                <field name="qty_on_site"/>
+                <field name="qty_beli" readonly="1"/>
+                <field name="uom_id" readonly="1"/>
+                <field name="unit_price" string="Harga Satuan" readonly="1"/>
+                <field name="subtotal" string="Subtotal" readonly="1"/>
+                <field name="item_type" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Product Categories -->
+        <record id="cat_baut" model="product.category">
+            <field name="name">Baut</field>
+        </record>
+        <record id="cat_mur" model="product.category">
+            <field name="name">Mur</field>
+        </record>
+        <record id="cat_washer" model="product.category">
+            <field name="name">Washer</field>
+        </record>
+
+        <!-- Standardization -->
+        <record id="std_din" model="product.standardization">
+            <field name="name">DIN</field>
+        </record>
+        <record id="std_jis" model="product.standardization">
+            <field name="name">JIS</field>
+        </record>
+        <record id="std_ansi" model="product.standardization">
+            <field name="name">ANSI</field>
+        </record>
+        <record id="std_sni" model="product.standardization">
+            <field name="name">SNI</field>
+        </record>
+        <record id="std_none" model="product.standardization">
+            <field name="name">None</field>
+        </record>
+
+        <!-- Finishing -->
+        <record id="fin_zinc" model="product.finishing">
+            <field name="name">Zinc</field>
+        </record>
+        <record id="fin_black" model="product.finishing">
+            <field name="name">Black</field>
+        </record>
+        <record id="fin_plain" model="product.finishing">
+            <field name="name">Plain</field>
+        </record>
+    </data>
+</odoo>

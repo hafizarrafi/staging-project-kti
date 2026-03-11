@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form Produk - Tambah Tab Konversi Satuan -->
+    <record id="product_template_form_uom_factors" model="ir.ui.view">
+        <field name="name">product.template.form.uom.factors</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Fix typo in label "Pajak Penjualan" -->
+            <xpath expr="//field[@name='taxes_id']" position="attributes">
+                <attribute name="string">Pajak Penjualan</attribute>
+            </xpath>
+
+            <!-- Insert the conversion table into Informasi Umum tab -->
+            <xpath expr="//page[@name='general_information']" position="inside">
+                <separator string="Harga &amp; Stok Satuan Alternatif"/>
+                <div class="alert alert-info py-2" role="alert">
+                    <p class="mb-0"><strong>💡 Tip:</strong> Anda bisa mengubah <strong>Harga</strong> dan <strong>Stok</strong> langsung di tabel bawah. Perubahan stok otomatis mengupdate "Kuantitas Di Tangan".</p>
+                </div>
+                <field name="uom_factor_ids">
+                    <list editable="bottom" decoration-info="True">
+                        <field name="uom_id" string="Satuan Alternatif"/>
+                        <field name="conversion_factor" string="Sama Dengan (Satuan Dasar)"/>
+                        <field name="price" string="Harga per Satuan" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        <field name="qty_available_alt_uom" string="Jumlah Stok" widget="float" options="{'decimal_places': 2}"/>
+                        <field name="notes" placeholder="Catatan..."/>
+                    </list>
+                </field>
+            </xpath>
+
+            <!-- Tampilan stok ekuivalen di bawah Kuantitas Di Tangan -->
+            <xpath expr="//div[field[@name='qty_available']]" position="after">
+                <label for="qty_alt_html" string="Stok Satuan Alternatif" invisible="not is_storable"/>
+                <div class="o_row" invisible="not is_storable">
+                    <field name="qty_alt_html" widget="html" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- List View Faktor Konversi Satuan -->
+    <record id="product_uom_factor_list" model="ir.ui.view">
+        <field name="name">product.uom.factor.list</field>
+        <field name="model">product.uom.factor</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="product_id"/>
+                <field name="uom_id"/>
+                <field name="conversion_factor" widget="float" options="{'decimal_places': 2}"/>
+                <field name="price"/>
+                <field name="qty_available_alt_uom" readonly="1" widget="float" options="{'decimal_places': 2}"/>
+                <field name="base_uom_id" invisible="1"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View Faktor Konversi Satuan -->
+    <record id="product_uom_factor_form" model="ir.ui.view">
+        <field name="name">product.uom.factor.form</field>
+        <field name="model">product.uom.factor</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="product_id"/>
+                    <field name="base_uom_id" readonly="1"/>
+                    <field name="uom_id"/>
+                    <field name="conversion_factor" widget="float" options="{'decimal_places': 2}" help="Masukkan rasio konversi. Contoh: 0.80 berarti 1 Satuan Alternatif = 0.80 Satuan Dasar"/>
+                    <field name="price"/>
+                </group>
+                <group>
+                    <field name="qty_available_alt_uom" readonly="1" widget="float" options="{'decimal_places': 2}" label="Stok Saat Ini"/>
+                </group>
+                <field name="notes" placeholder="Tambah catatan konversi..."/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View Faktor Konversi Satuan -->
+    <record id="product_uom_factor_search" model="ir.ui.view">
+        <field name="name">product.uom.factor.search</field>
+        <field name="model">product.uom.factor</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="uom_id"/>
+                <filter name="filter_product" string="Product" context="{'group_by': 'product_id'}"/>
+                <filter name="filter_uom" string="UoM" context="{'group_by': 'uom_id'}"/>
+            </search>
+        </field>
+    </record>
+
+</odoo>

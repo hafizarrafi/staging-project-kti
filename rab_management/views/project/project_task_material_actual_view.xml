@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Inherit project.task form: add Aktual Konsumsi Material tab after Sub-tasks -->
+    <record id="view_task_form2_inherit_material_actual" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.material.actual</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='sub_tasks_page']" position="after">
+                <page string="Aktual Konsumsi Material">
+                    <button name="action_create_material_consumption_picking"
+                            type="object"
+                            string="Buat Delivery Order"
+                            class="btn-primary mb-3"
+                            invisible="not id or (material_picking_id and material_picking_id_state != 'cancel')"/>
+                    <field name="material_picking_id" readonly="1"
+                           invisible="not material_picking_id"
+                           options="{'no_open': False}"/>
+                    <field name="material_picking_id_state" invisible="1"/>
+                    <field name="material_needed_ids" context="{'default_source': 'manual'}">
+                        <list editable="bottom">
+                            <field name="source" column_invisible="1"/>
+                            <field name="source_path" string="Judul"
+                                   readonly="source == 'subtask'"/>
+                            <field name="product_id" string="Material"
+                                   readonly="source == 'subtask'"/>
+                            <field name="total_qty" string="Jumlah Estimasi"
+                                   readonly="source == 'subtask'"/>
+                            <field name="qty_actual" string="Jumlah Aktual"/>
+                            <field name="uom_id" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

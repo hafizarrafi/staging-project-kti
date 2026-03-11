@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="fastindo_project.PackingBoardWidget">
+  <div class="fp-packing-board-field w-100">
+    <t t-if="state.pickingId">
+      <PackingBoard
+        pickingId="state.pickingId"
+        readonly="isBoardReadonly"
+      />
+    </t>
+    <t t-else="">
+      <div class="text-muted p-3">
+        Simpan record terlebih dahulu untuk melihat packing board.
+      </div>
+    </t>
+  </div>
+</t>
+
+</templates>
+
