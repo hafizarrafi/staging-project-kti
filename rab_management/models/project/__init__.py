@@ -8,3 +8,5 @@ from . import project_task_material_actual
 from . import project_material_master
 from . import project_equipment_master
 from . import project_additional_purchase
+from . import project_inventory
+from . import project_inventory_wizard
