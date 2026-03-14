@@ -5,11 +5,9 @@
         <field name="name">project.material.consumption.list</field>
         <field name="model">project.material.consumption</field>
         <field name="arch" type="xml">
-            <list string="Material Consumptions">
-                <field name="name"/>
+            <list string="Material Consumption Dashboards">
                 <field name="project_id"/>
                 <field name="date"/>
-                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'done'"/>
             </list>
         </field>
     </record>
@@ -18,37 +16,32 @@
         <field name="name">project.material.consumption.form</field>
         <field name="model">project.material.consumption</field>
         <field name="arch" type="xml">
-            <form string="Material Consumption tracking">
+            <form string="Material Consumption Dashboard">
                 <header>
-                    <button name="action_confirm" string="Confirm" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_generate_picking" string="Generate Consumption DO" type="object" class="btn-primary" invisible="state != 'confirmed'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done"/>
+                    <button name="action_generate_picking" string="Generate Selected DO" type="object" class="btn-primary" 
+                            confirm="Are you sure you want to generate Delivery Orders for selected items?"/>
+                    <button name="action_refresh_requirements" string="Refresh Requirements" type="object" class="btn-secondary"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" readonly="1"/>
+                            <field name="project_id" readonly="1"/>
                         </h1>
                     </div>
                     <group>
-                        <group>
-                            <field name="project_id" readonly="state != 'draft'"/>
-                            <field name="date" readonly="state != 'draft'"/>
-                        </group>
-                        <group>
-                            <field name="picking_id" invisible="not picking_id"/>
-                        </group>
+                        <field name="date"/>
                     </group>
                     <notebook>
-                        <page string="Consumption Lines" name="lines">
-                            <field name="line_ids" readonly="state != 'draft'">
-                                <list editable="bottom" create="0">
+                        <page string="Consumption Dashboard" name="lines">
+                            <field name="line_ids">
+                                <list editable="bottom" create="0" delete="0">
+                                    <field name="is_selected" string="Select"/>
                                     <field name="task_id" readonly="1"/>
                                     <field name="product_id" readonly="1"/>
                                     <field name="qty_available" readonly="1" string="Stok (uom)"/>
                                     <field name="qty_required_kg" readonly="1" string="Dibutuhkan (kg)"/>
-                                    <field name="qty_remaining" readonly="1" string="Sisa (kg)"/>
-                                    <field name="qty_used" string="Aktual (kg)" sum="Total Aktual"/>
+                                    <field name="qty_issued_unit" readonly="1" string="Sudah Terbit (unit)"/>
+                                    <field name="qty_to_issue_unit" string="Akan Terbit (unit)" class="font-weight-bold"/>
                                 </list>
                             </field>
                         </page>
@@ -60,7 +53,7 @@
     </record>
 
     <record id="action_project_material_consumption" model="ir.actions.act_window">
-        <field name="name">Material Consumptions</field>
+        <field name="name">Material Consumption Dashboard</field>
         <field name="res_model">project.material.consumption</field>
         <field name="view_mode">list,form</field>
     </record>
