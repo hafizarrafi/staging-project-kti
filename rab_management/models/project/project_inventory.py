@@ -102,24 +102,31 @@ class ProjectProject(models.Model):
             'default_project_id': self.id,
         }
 
-        # Jika ini adalah inisialisasi pertama (baru buat lokasi), 
-        # coba tarik data qty_on_site dari master material/equipment sebagai saran awal.
-        if is_new_location:
-            lines_data = []
-            for mat in self.material_master_ids.filtered(lambda m: m.qty_on_site > 0):
-                lines_data.append((0, 0, {
-                    'product_id': mat.product_id.id,
-                    'quantity': mat.qty_on_site,
-                }))
-            
-            for equip in self.equipment_master_ids.filtered(lambda e: e.qty_on_site > 0):
-                lines_data.append((0, 0, {
-                    'product_id': equip.product_id.id,
-                    'quantity': equip.qty_on_site,
-                }))
-            
-            if lines_data:
-                ctx['default_line_ids'] = lines_data
+        # Tarik data dari master material/equipment.
+        # Kita gabungkan qty berdasarkan product_id agar tidak double baris untuk produk yang sama.
+        product_qtys = {}
+        
+        for mat in self.material_master_ids:
+            if not mat.product_id:
+                continue
+            pid = mat.product_id.id
+            product_qtys[pid] = product_qtys.get(pid, 0.0) + mat.qty_on_site
+        
+        for equip in self.equipment_master_ids:
+            if not equip.product_id:
+                continue
+            pid = equip.product_id.id
+            product_qtys[pid] = product_qtys.get(pid, 0.0) + equip.qty_on_site
+        
+        lines_data = []
+        for pid, qty in product_qtys.items():
+            lines_data.append((0, 0, {
+                'product_id': pid,
+                'quantity': qty,
+            }))
+        
+        if lines_data:
+            ctx['default_line_ids'] = lines_data
 
         return {
             'name': _('Initialize Stock On Site'),

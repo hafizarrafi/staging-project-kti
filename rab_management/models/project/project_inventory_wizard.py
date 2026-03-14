@@ -28,12 +28,22 @@ class ProjectStockOnsiteWizard(models.TransientModel):
         if not inventory_location:
              raise UserError(_("Cannot find Inventory Adjustment location. Please check your inventory configuration."))
 
-        # Create formal picking for audit trail
+        moves = self.env['stock.move']
+        # Hanya buat move untuk produk yang ada quantity-nya > 0
+        # Line dengan quantity 0 tetap muncul di wizard sebagai daftar review, tapi di-skip saat create move.
+        lines_to_process = self.line_ids.filtered(lambda l: l.quantity > 0)
+        
         # Try to find an appropriate picking type (usually 'incoming' for initial stock or 'internal')
         picking_type = self.env['stock.picking.type'].search([
             ('code', '=', 'incoming'),
             ('company_id', '=', self.project_id.company_id.id)
         ], limit=1)
+
+        if not lines_to_process:
+            # Jika user sengaja mengosongkan semua (qty=0), 
+            # kita anggap inisialisasi selesai tanpa membuat picking apapun.
+            self.project_id.sudo().write({'is_stock_initialized': True})
+            return {'type': 'ir.actions.client', 'tag': 'reload'}
 
         picking = self.env['stock.picking'].create({
             'picking_type_id': picking_type.id if picking_type else False,
@@ -44,8 +54,7 @@ class ProjectStockOnsiteWizard(models.TransientModel):
             'company_id': self.project_id.company_id.id,
         })
 
-        moves = self.env['stock.move']
-        for line in self.line_ids:
+        for line in lines_to_process:
             moves |= self.env['stock.move'].create({
                 'name': line.product_id.display_name,
                 'product_id': line.product_id.id,
