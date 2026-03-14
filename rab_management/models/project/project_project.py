@@ -90,6 +90,18 @@ class ProjectProject(models.Model):
         string='Semua Sales Order Proyek',
     )
 
+    issue_ids = fields.One2many(
+        'project.material.issue',
+        'project_id',
+        string='Material Issues'
+    )
+
+    consumption_ids = fields.One2many(
+        'project.material.consumption',
+        'project_id',
+        string='Material Consumptions'
+    )
+
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
@@ -151,6 +163,41 @@ class ProjectProject(models.Model):
             'res_model': 'rab.management',
             'view_mode': 'list,form',
             'domain': [('id', 'in', rab_ids)],
+            'target': 'current',
+        }
+
+    def action_view_material_issues(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Material Issues',
+            'res_model': 'project.material.issue',
+            'view_mode': 'list,form',
+            'domain': [('project_id', '=', self.id)],
+            'context': {'default_project_id': self.id},
+            'target': 'current',
+        }
+
+    def action_open_issue_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Generate Material Issue',
+            'res_model': 'project.material.issue.wizard',
+            'view_mode': 'form',
+            'context': {'default_project_id': self.id},
+            'target': 'new',
+        }
+
+    def action_view_material_consumptions(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Material Consumptions',
+            'res_model': 'project.material.consumption',
+            'view_mode': 'list,form',
+            'domain': [('project_id', '=', self.id)],
+            'context': {'default_project_id': self.id},
             'target': 'current',
         }
 

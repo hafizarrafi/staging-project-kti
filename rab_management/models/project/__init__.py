@@ -10,3 +10,6 @@ from . import project_equipment_master
 from . import project_additional_purchase
 from . import project_inventory
 from . import project_inventory_wizard
+from . import project_material_issue
+from . import project_material_issue_wizard
+from . import project_material_consumption

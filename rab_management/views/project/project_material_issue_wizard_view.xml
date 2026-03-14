@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_project_material_issue_wizard_form" model="ir.ui.view">
+        <field name="name">project.material.issue.wizard.form</field>
+        <field name="model">project.material.issue.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Material Issue from Task">
+                <group>
+                    <field name="project_id" readonly="1"/>
+                    <field name="task_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                </group>
+                <notebook>
+                    <page string="Preview Lines">
+                        <field name="line_ids">
+                            <list editable="bottom" create="0">
+                                <field name="product_id" readonly="1"/>
+                                <field name="task_id" readonly="1"/>
+                                <field name="qty_required_kg" readonly="1"/>
+                                <field name="unit_weight" readonly="1"/>
+                                <field name="qty_issue_unit"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+                <footer>
+                    <button name="action_create_issue" string="Create Issue Planning" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_project_material_issue_wizard" model="ir.actions.act_window">
+        <field name="name">Generate Material Issue</field>
+        <field name="res_model">project.material.issue.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

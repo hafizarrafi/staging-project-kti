@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_project_material_issue_tree" model="ir.ui.view">
+        <field name="name">project.material.issue.list</field>
+        <field name="model">project.material.issue</field>
+        <field name="arch" type="xml">
+            <list string="Material Issues">
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="date"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_project_material_issue_form" model="ir.ui.view">
+        <field name="name">project.material.issue.form</field>
+        <field name="model">project.material.issue</field>
+        <field name="arch" type="xml">
+            <form string="Material Issue Planning">
+                <header>
+                    <button name="action_confirm" string="Confirm" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_generate_picking" string="Generate DO" type="object" class="btn-primary" invisible="state != 'confirmed'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="project_id" readonly="state != 'draft'"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="picking_id" invisible="not picking_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Material Lines" name="lines">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="task_id" options="{'no_create': True}"/>
+                                    <field name="qty_required_kg" sum="Total Req Kg"/>
+                                    <field name="unit_weight" readonly="1"/>
+                                    <field name="qty_issue_unit" sum="Total Issue Unit"/>
+                                    <field name="actual_weight_kg" sum="Total Actual Kg"/>
+                                    <field name="remaining_weight_kg" sum="Total Remaining Kg"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_project_material_issue" model="ir.actions.act_window">
+        <field name="name">Material Issues</field>
+        <field name="res_model">project.material.issue</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Material Issue Planning
+            </p>
+        </field>
+    </record>
+
+</odoo>
