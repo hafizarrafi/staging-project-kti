@@ -35,7 +35,8 @@ class ProjectMaterialConsumption(models.Model):
     line_ids = fields.One2many(
         'project.material.consumption.line',
         'consumption_id',
-        string='Consumption Lines'
+        string='Consumption Lines',
+        copy=True
     )
 
     picking_id = fields.Many2one(
@@ -44,6 +45,28 @@ class ProjectMaterialConsumption(models.Model):
         readonly=True,
         copy=False
     )
+
+    @api.onchange('project_id')
+    def _onchange_project_id_load_requirements(self):
+        if not self.project_id:
+            self.line_ids = [(5, 0, 0)]
+            return
+
+        # Get all material requirements from tasks in this project
+        tasks = self.env['project.task'].search([('project_id', '=', self.project_id.id)])
+        line_vals = []
+        
+        for task in tasks:
+            for mat in task.material_needed_ids:
+                # We use the weight (kg) as the required amount
+                line_vals.append((0, 0, {
+                    'task_id': task.id,
+                    'product_id': mat.product_id.id,
+                    'qty_required_kg': mat.weight or 0.0,
+                    'qty_used': 0.0,
+                }))
+        
+        self.line_ids = [(5, 0, 0)] + line_vals
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -115,9 +138,10 @@ class ProjectMaterialConsumptionLine(models.Model):
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task')
 
-    qty_available = fields.Float(string='Available', compute='_compute_qty_available')
-    qty_used = fields.Float(string='Used', required=True, default=0.0)
-    qty_remaining = fields.Float(string='Remaining', compute='_compute_qty_remaining')
+    qty_available = fields.Float(string='Stok (uom)', compute='_compute_qty_available')
+    qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
+    qty_used = fields.Float(string='Aktual (kg)', required=True, default=0.0)
+    qty_remaining = fields.Float(string='Sisa (kg)', compute='_compute_qty_remaining', store=True)
 
     @api.depends('product_id', 'consumption_id.project_id.stock_location_id')
     def _compute_qty_available(self):
@@ -126,13 +150,15 @@ class ProjectMaterialConsumptionLine(models.Model):
                 rec.qty_available = 0.0
                 continue
             
-            quant = self.env['stock.quant'].search([
+            # Using Odoo's stock.quant to get real available quantity at project site
+            domain = [
                 ('product_id', '=', rec.product_id.id),
                 ('location_id', '=', rec.consumption_id.project_id.stock_location_id.id)
-            ], limit=1)
-            rec.qty_available = quant.quantity if quant else 0.0
+            ]
+            quants = self.env['stock.quant'].search(domain)
+            rec.qty_available = sum(quants.mapped('quantity'))
 
-    @api.depends('qty_available', 'qty_used')
+    @api.depends('qty_required_kg', 'qty_used')
     def _compute_qty_remaining(self):
         for rec in self:
-            rec.qty_remaining = rec.qty_available - rec.qty_used
+            rec.qty_remaining = rec.qty_required_kg - rec.qty_used

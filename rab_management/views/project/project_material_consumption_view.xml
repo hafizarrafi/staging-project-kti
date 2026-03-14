@@ -42,12 +42,13 @@
                     <notebook>
                         <page string="Consumption Lines" name="lines">
                             <field name="line_ids" readonly="state != 'draft'">
-                                <list editable="bottom">
-                                    <field name="product_id"/>
-                                    <field name="task_id" options="{'no_create': True}"/>
-                                    <field name="qty_available" readonly="1"/>
-                                    <field name="qty_used" sum="Total Used"/>
-                                    <field name="qty_remaining" readonly="1"/>
+                                <list editable="bottom" create="0">
+                                    <field name="task_id" readonly="1"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="qty_available" readonly="1" string="Stok (uom)"/>
+                                    <field name="qty_required_kg" readonly="1" string="Dibutuhkan (kg)"/>
+                                    <field name="qty_remaining" readonly="1" string="Sisa (kg)"/>
+                                    <field name="qty_used" string="Aktual (kg)" sum="Total Aktual"/>
                                 </list>
                             </field>
                         </page>
