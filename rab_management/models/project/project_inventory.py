@@ -11,6 +11,12 @@ class ProjectProject(models.Model):
         tracking=True,
         help="Location used for inventory related to this project."
     )
+    is_stock_initialized = fields.Boolean(
+        string='Stock Initialized',
+        default=False,
+        copy=False,
+        help="Flag to prevent duplicate initial stock recognition."
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -84,6 +90,9 @@ class ProjectProject(models.Model):
 
     def action_init_stock_onsite(self):
         self.ensure_one()
+        if self.is_stock_initialized:
+            raise UserError(_("Stock for this project has already been initialized. Use the regular inventory adjustment or transfer for further changes."))
+        
         is_new_location = False
         if not self.stock_location_id:
             self._create_stock_location()

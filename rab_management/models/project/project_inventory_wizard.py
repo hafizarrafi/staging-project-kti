@@ -66,6 +66,9 @@ class ProjectStockOnsiteWizard(models.TransientModel):
                 move.quantity_done = move.product_uom_qty
         
         picking.button_validate()
+        
+        # Mark project as initialized
+        self.project_id.sudo().write({'is_stock_initialized': True})
 
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
