@@ -5,11 +5,12 @@
         <field name="name">project.material.issue.list</field>
         <field name="model">project.material.issue</field>
         <field name="arch" type="xml">
-            <list string="Material Issues">
+            <list string="Material Issue Logs" create="0">
                 <field name="name"/>
                 <field name="project_id"/>
                 <field name="date"/>
-                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'done'"/>
+                <field name="picking_id"/>
+                <field name="state" widget="badge" decoration-success="state == 'confirmed'" decoration-danger="state == 'cancel'"/>
             </list>
         </field>
     </record>
@@ -18,38 +19,33 @@
         <field name="name">project.material.issue.form</field>
         <field name="model">project.material.issue</field>
         <field name="arch" type="xml">
-            <form string="Material Issue Planning">
+            <form string="Material Issue Log" create="0" edit="0">
                 <header>
-                    <button name="action_confirm" string="Confirm" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_generate_picking" string="Generate DO" type="object" class="btn-primary" invisible="state != 'confirmed'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,done"/>
+                    <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" readonly="1"/>
+                            <field name="name"/>
                         </h1>
                     </div>
                     <group>
                         <group>
-                            <field name="project_id" readonly="state != 'draft'"/>
-                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="project_id"/>
+                            <field name="date"/>
                         </group>
                         <group>
-                            <field name="picking_id" invisible="not picking_id"/>
+                            <field name="picking_id"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Material Lines" name="lines">
-                            <field name="line_ids" readonly="state != 'draft'">
-                                <list editable="bottom">
+                        <page string="Issued Items" name="lines">
+                            <field name="line_ids">
+                                <list>
+                                    <field name="task_id"/>
                                     <field name="product_id"/>
-                                    <field name="task_id" options="{'no_create': True}"/>
-                                    <field name="qty_required_kg" sum="Total Req Kg"/>
-                                    <field name="unit_weight" readonly="1"/>
-                                    <field name="qty_issue_unit" sum="Total Issue Unit"/>
-                                    <field name="actual_weight_kg" sum="Total Actual Kg"/>
-                                    <field name="remaining_weight_kg" sum="Total Remaining Kg"/>
+                                    <field name="qty_issue_unit" string="Quantity (unit)"/>
+                                    <field name="qty_required_kg" string="Original Req (kg)"/>
                                 </list>
                             </field>
                         </page>
@@ -61,12 +57,12 @@
     </record>
 
     <record id="action_project_material_issue" model="ir.actions.act_window">
-        <field name="name">Material Issues</field>
+        <field name="name">Material Issue Logs</field>
         <field name="res_model">project.material.issue</field>
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Create a new Material Issue Planning
+                Historial log of material issues will appear here.
             </p>
         </field>
     </record>
