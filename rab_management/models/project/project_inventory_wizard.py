@@ -17,28 +17,55 @@ class ProjectStockOnsiteWizard(models.TransientModel):
         if not self.location_id:
             self.project_id._create_stock_location()
         
-        for line in self.line_ids:
-            # Create or Update Stock Quant
-            quant = self.env['stock.quant'].search([
-                ('product_id', '=', line.product_id.id),
-                ('location_id', '=', self.location_id.id),
-                ('lot_id', '=', False),
-                ('package_id', '=', False),
-                ('owner_id', '=', False)
+        # Cari Inventory Adjustment Location (Virtual)
+        inventory_location = self.env.ref('stock.stock_location_inventory_loss', raise_if_not_found=False)
+        if not inventory_location:
+            inventory_location = self.env['stock.location'].search([
+                ('usage', '=', 'inventory'), 
+                '|', ('company_id', '=', self.project_id.company_id.id), ('company_id', '=', False)
             ], limit=1)
-            
-            if quant:
-                quant.with_context(inventory_mode=True).write({
-                    'inventory_quantity': quant.quantity + line.quantity
-                })
-                quant.action_apply_inventory()
-            else:
-                quant = self.env['stock.quant'].with_context(inventory_mode=True).create({
-                    'product_id': line.product_id.id,
-                    'location_id': self.location_id.id,
-                    'inventory_quantity': line.quantity,
-                })
-                quant.action_apply_inventory()
+        
+        if not inventory_location:
+             raise UserError(_("Cannot find Inventory Adjustment location. Please check your inventory configuration."))
+
+        # Create formal picking for audit trail
+        # Try to find an appropriate picking type (usually 'incoming' for initial stock or 'internal')
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'incoming'),
+            ('company_id', '=', self.project_id.company_id.id)
+        ], limit=1)
+
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': picking_type.id if picking_type else False,
+            'location_id': inventory_location.id,
+            'location_dest_id': self.location_id.id,
+            'origin': _("Initial Stock Recognition: %s") % self.project_id.name,
+            'move_type': 'direct',
+            'company_id': self.project_id.company_id.id,
+        })
+
+        moves = self.env['stock.move']
+        for line in self.line_ids:
+            moves |= self.env['stock.move'].create({
+                'name': line.product_id.display_name,
+                'product_id': line.product_id.id,
+                'product_uom_qty': line.quantity,
+                'product_uom': line.product_id.uom_id.id,
+                'picking_id': picking.id,
+                'location_id': inventory_location.id,
+                'location_dest_id': self.location_id.id,
+                'company_id': self.project_id.company_id.id,
+            })
+        
+        picking.action_confirm()
+        picking.action_assign()
+        
+        # Set quantities and validate
+        for move in picking.move_ids:
+            if move.state == 'assigned':
+                move.quantity_done = move.product_uom_qty
+        
+        picking.button_validate()
 
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 

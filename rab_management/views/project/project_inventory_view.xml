@@ -1,29 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_project_project_inventory_form_inherit" model="ir.ui.view">
-        <name>project.project.form.inventory.inherit</name>
-        <model>project.project</model>
-        <inherit_id ref="project.edit_project"/>
-        <arch type="xml">
-            <xpath expr="//header" position="inside">
-                <button name="action_init_stock_onsite" string="Initialize Stock On Site" type="object" class="btn-info" groups="stock.group_stock_manager"/>
-                <button name="action_create_stock_location" string="Create Stock Location" type="object" invisible="stock_location_id != False" groups="base.group_no_one"/>
-            </xpath>
-            <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_open_project_inventory" type="object" class="oe_stat_button" icon="fa-cubes">
-                    <div class="o_field_widget o_stat_info">
-                        <span class="o_stat_text">Project</span>
-                        <span class="o_stat_text">Inventory</span>
-                    </div>
-                </button>
-            </xpath>
-            <xpath expr="//notebook" position="inside">
-                <page string="Inventory Configuration" name="inventory_config" groups="stock.group_stock_manager">
-                    <group>
-                        <field name="stock_location_id"/>
-                    </group>
-                </page>
-            </xpath>
-        </arch>
-    </record>
+    <data>
+        <record id="view_project_project_inventory_form_inherit" model="ir.ui.view">
+            <field name="name">project.project.form.inventory.inherit</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.edit_project"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <button name="action_init_stock_onsite" string="Initialize Stock On Site" type="object" class="btn-info" groups="stock.group_stock_manager"/>
+                    <button name="action_create_stock_location" string="Create Stock Location" type="object" invisible="stock_location_id != False" groups="base.group_no_one"/>
+                </xpath>
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_open_project_inventory" type="object" class="oe_stat_button" icon="fa-cubes">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_text">Project</span>
+                            <span class="o_stat_text">Inventory</span>
+                        </div>
+                    </button>
+                </xpath>
+                <xpath expr="//notebook" position="inside">
+                    <page string="Inventory Configuration" name="inventory_config" groups="stock.group_stock_manager">
+                        <group>
+                            <field name="stock_location_id"/>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
 </odoo>
