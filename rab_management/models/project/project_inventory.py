@@ -98,14 +98,14 @@ class ProjectProject(models.Model):
             self._create_stock_location()
             is_new_location = True
 
-        ctx = {
-            'default_project_id': self.id,
-        }
+        # 1. Buat record Wizard terlebih dahulu di DB (Transient).
+        # Ini lebih aman daripada lewat context jika datanya ratusan baris.
+        wizard = self.env['project.stock.onsite.wizard'].create({
+            'project_id': self.id,
+        })
 
-        # Tarik data dari master material/equipment.
-        # Kita gabungkan qty berdasarkan product_id agar tidak double baris untuk produk yang sama.
+        # 2. Tarik data dari master material/equipment.
         product_qtys = {}
-        
         for mat in self.material_master_ids:
             if not mat.product_id:
                 continue
@@ -118,21 +118,23 @@ class ProjectProject(models.Model):
             pid = equip.product_id.id
             product_qtys[pid] = product_qtys.get(pid, 0.0) + equip.qty_on_site
         
-        lines_data = []
-        for pid, qty in product_qtys.items():
-            lines_data.append((0, 0, {
-                'product_id': pid,
-                'quantity': qty,
-            }))
-        
-        if lines_data:
-            ctx['default_line_ids'] = lines_data
+        # 3. Create lines secara batch langsung di database
+        if product_qtys:
+            lines_vals = []
+            for pid, qty in product_qtys.items():
+                lines_vals.append({
+                    'wizard_id': wizard.id,
+                    'product_id': pid,
+                    'quantity': qty,
+                })
+            self.env['project.stock.onsite.line'].create(lines_vals)
 
         return {
             'name': _('Initialize Stock On Site'),
             'type': 'ir.actions.act_window',
             'res_model': 'project.stock.onsite.wizard',
             'view_mode': 'form',
+            'res_id': wizard.id,
             'target': 'new',
-            'context': ctx,
+            'context': {'default_project_id': self.id},
         }
