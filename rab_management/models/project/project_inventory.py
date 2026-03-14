@@ -65,7 +65,7 @@ class ProjectProject(models.Model):
             'name': _('Project Inventory'),
             'type': 'ir.actions.act_window',
             'res_model': 'stock.quant',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('location_id', '=', self.stock_location_id.id)],
             'context': {
                 'search_default_locationgroup': 1,
