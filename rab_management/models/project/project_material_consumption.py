@@ -97,7 +97,18 @@ class ProjectMaterialConsumption(models.Model):
             'state': 'confirmed',
         })
 
-        # 2. Prepare Moves
+        # 2. Create Picking
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': picking_type.id,
+            'location_id': picking_type.default_location_src_id.id,
+            'location_dest_id': self.project_id.stock_location_id.id,
+            'origin': _('Consumption Dashboard: %s') % self.project_id.name,
+            'company_id': self.project_id.company_id.id,
+        })
+        
+        issue_log.picking_id = picking.id
+
+        # 3. Create Moves
         move_vals = []
         for line in selected_lines:
             # Create Log Line
@@ -109,26 +120,23 @@ class ProjectMaterialConsumption(models.Model):
                 'qty_issue_unit': line.qty_to_issue_unit,
             })
 
-            move_vals.append((0, 0, {
-                'name': _('Consumption for %s') % line.task_id.name,
+            # Create move directly without 'name' to avoid ValueError
+            move_vals.append({
+                'picking_id': picking.id,
                 'product_id': line.product_id.id,
                 'product_uom_qty': line.qty_to_issue_unit,
                 'product_uom': line.product_id.uom_id.id,
                 'location_id': picking_type.default_location_src_id.id,
                 'location_dest_id': self.project_id.stock_location_id.id,
-            }))
+                'origin': picking.origin,
+                'company_id': self.project_id.company_id.id,
+            })
 
-        # 3. Create Picking
-        picking = self.env['stock.picking'].create({
-            'picking_type_id': picking_type.id,
-            'location_id': picking_type.default_location_src_id.id,
-            'location_dest_id': self.project_id.stock_location_id.id,
-            'origin': _('Consumption Dashboard: %s') % self.project_id.name,
-            'move_ids': move_vals,
-        })
+        self.env['stock.move'].create(move_vals)
         
-        issue_log.picking_id = picking.id
-        # issue_log.action_confirm() # Already confirmed above
+        # 4. Process Picking
+        picking.action_confirm()
+        picking.action_assign()
         
         # Reset selection
         selected_lines.write({'is_selected': False})
