@@ -29,8 +29,12 @@ class ProjectProject(models.Model):
             ('company_id', '=', self.company_id.id or self.env.company.id)
         ], limit=1)
 
+        if not warehouse:
+             # Jika tidak ada warehouse, jangan crash, cukup log atau biarkan project tercipta tanpa lokasi
+             return
+
         # Gunakan lot_stock_id (misal: WH/Stock) sebagai parent
-        parent_location = warehouse.lot_stock_id if warehouse else self.env.ref('stock.stock_location_stock', raise_if_not_found=False)
+        parent_location = warehouse.lot_stock_id
 
         if not parent_location:
              parent_location = self.env['stock.location'].search([
@@ -39,16 +43,20 @@ class ProjectProject(models.Model):
              ], limit=1)
 
         if not parent_location:
-            raise UserError(_("Cannot find a parent internal location for the project stock. Please ensure a Warehouse is configured."))
+            return # Safety guard
 
-        location = self.env['stock.location'].create({
-            'name': f"Project: {self.name}",
-            'usage': 'internal',
-            'location_id': parent_location.id,
-            'company_id': self.company_id.id or self.env.company.id,
-            'active': True,
-        })
-        self.sudo().write({'stock_location_id': location.id})
+        try:
+            location = self.env['stock.location'].create({
+                'name': f"Project: {self.name}",
+                'usage': 'internal',
+                'location_id': parent_location.id,
+                'company_id': self.company_id.id or self.env.company.id,
+                'active': True,
+            })
+            self.sudo().write({'stock_location_id': location.id})
+        except Exception:
+            # Jika gagal (misal data integrity), jangan hentikan pembuatan project
+            pass
 
     def action_create_stock_location(self):
         """Manual action to create location for existing projects."""
@@ -66,7 +74,7 @@ class ProjectProject(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'stock.quant',
             'view_mode': 'list,form',
-            'domain': [('location_id', '=', self.stock_location_id.id)],
+            'domain': [('location_id', 'child_of', self.stock_location_id.id)],
             'context': {
                 'search_default_locationgroup': 1,
                 'default_location_id': self.stock_location_id.id,
