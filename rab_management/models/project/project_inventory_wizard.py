@@ -53,11 +53,11 @@ class ProjectStockOnsiteWizard(models.TransientModel):
             'company_id': self.project_id.company_id.id,
         })
 
-        moves = self.env['stock.move']
-
+        # Batch create moves for better performance (Odoo 19 compatible)
+        move_vals = []
         for line in lines_to_process:
-            moves |= self.env['stock.move'].create({
-                'name': line.product_id.display_name,
+            move_vals.append({
+                'description_picking': line.product_id.display_name,
                 'product_id': line.product_id.id,
                 'product_uom_qty': line.quantity,
                 'product_uom': line.product_id.uom_id.id,
@@ -65,15 +65,21 @@ class ProjectStockOnsiteWizard(models.TransientModel):
                 'location_id': inventory_location.id,
                 'location_dest_id': self.location_id.id,
                 'company_id': self.project_id.company_id.id,
+                'state': 'draft',
             })
+        
+        self.env['stock.move'].create(move_vals)
         
         picking.action_confirm()
         picking.action_assign()
         
-        # Set quantities and validate
+        # Set quantities and validate (Odoo 19: usage of 'quantity' field instead of 'quantity_done')
         for move in picking.move_ids:
             if move.state == 'assigned':
-                move.quantity_done = move.product_uom_qty
+                # Di Odoo 17+, fieldnya biasanya 'quantity'. 
+                # Kita gunakan helper jika tersedia atau set langsung ke move lines.
+                for move_line in move.move_line_ids:
+                    move_line.quantity = move_line.quantity_product_uom
         
         picking.button_validate()
         
