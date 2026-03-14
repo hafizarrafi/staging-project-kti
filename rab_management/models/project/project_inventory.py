@@ -89,3 +89,36 @@ class ProjectProject(models.Model):
                 'default_project_id': self.id,
             }
         }
+
+    def action_migrate_to_inventory(self):
+        """Migrate legacy project data (qty_on_site) to the new inventory system."""
+        for rec in self:
+            if not rec.stock_location_id:
+                rec._create_stock_location()
+            
+            # Persiapkan data penyesuaian dari material master & equipment master
+            lines_data = []
+            
+            for mat in rec.material_master_ids.filtered(lambda m: m.qty_on_site > 0):
+                lines_data.append((0, 0, {
+                    'product_id': mat.product_id.id,
+                    'quantity': mat.qty_on_site,
+                }))
+            
+            for equip in rec.equipment_master_ids.filtered(lambda e: e.qty_on_site > 0):
+                lines_data.append((0, 0, {
+                    'product_id': equip.product_id.id,
+                    'quantity': equip.qty_on_site,
+                }))
+            
+            if not lines_data:
+                continue
+            
+            # Buat wizard secara programmatical untuk melakukan migrasi
+            wizard = self.env['project.stock.onsite.wizard'].create({
+                'project_id': rec.id,
+                'line_ids': lines_data,
+            })
+            wizard.action_confirm()
+
+        return True
