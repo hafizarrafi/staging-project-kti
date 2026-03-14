@@ -16,43 +16,44 @@ class ProjectStockOnsiteWizard(models.TransientModel):
         
         if not self.location_id:
             self.project_id._create_stock_location()
-        
-        # Cari Inventory Adjustment Location (Virtual)
-        inventory_location = self.env.ref('stock.stock_location_inventory_loss', raise_if_not_found=False)
-        if not inventory_location:
-            inventory_location = self.env['stock.location'].search([
-                ('usage', '=', 'inventory'), 
-                '|', ('company_id', '=', self.project_id.company_id.id), ('company_id', '=', False)
-            ], limit=1)
-        
-        if not inventory_location:
-             raise UserError(_("Cannot find Inventory Adjustment location. Please check your inventory configuration."))
 
-        moves = self.env['stock.move']
+        # Cari Inventory Adjustment Location (Virtual)
+        # Sederhanakan pencarian: cari lokasi mana pun dengan usage 'inventory'
+        # karena lokasi ini bersifat virtual (adjustment)
+        inventory_location = self.env['stock.location'].search([('usage', '=', 'inventory')], limit=1)
+        
+        if not inventory_location:
+             raise UserError(_("Cannot find Inventory Adjustment location (usage: inventory). Please check your inventory configuration."))
+
         # Hanya buat move untuk produk yang ada quantity-nya > 0
-        # Line dengan quantity 0 tetap muncul di wizard sebagai daftar review, tapi di-skip saat create move.
         lines_to_process = self.line_ids.filtered(lambda l: l.quantity > 0)
         
-        # Try to find an appropriate picking type (usually 'incoming' for initial stock or 'internal')
-        picking_type = self.env['stock.picking.type'].search([
-            ('code', '=', 'incoming'),
-            ('company_id', '=', self.project_id.company_id.id)
-        ], limit=1)
-
         if not lines_to_process:
             # Jika user sengaja mengosongkan semua (qty=0), 
             # kita anggap inisialisasi selesai tanpa membuat picking apapun.
             self.project_id.sudo().write({'is_stock_initialized': True})
             return {'type': 'ir.actions.client', 'tag': 'reload'}
 
+        # Sederhanakan pencarian picking_type: cari incoming atau internal yang tersedia
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', 'in', ['incoming', 'internal']),
+            ('company_id', '=', self.project_id.company_id.id)
+        ], limit=1)
+        
+        if not picking_type:
+            # Fallback tanpa filter company jika perlu
+            picking_type = self.env['stock.picking.type'].search([('code', 'in', ['incoming', 'internal'])], limit=1)
+
         picking = self.env['stock.picking'].create({
             'picking_type_id': picking_type.id if picking_type else False,
             'location_id': inventory_location.id,
             'location_dest_id': self.location_id.id,
-            'origin': _("Initial Stock Recognition: %s") % self.project_id.name,
+            'origin': _("Initial Stock Adjustment: %s") % self.project_id.name,
             'move_type': 'direct',
             'company_id': self.project_id.company_id.id,
         })
+
+        moves = self.env['stock.move']
 
         for line in lines_to_process:
             moves |= self.env['stock.move'].create({
