@@ -1,5 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+import logging
+_logger = logging.getLogger(__name__)
 
 class ProjectStockOnsiteWizard(models.TransientModel):
     _name = 'project.stock.onsite.wizard'
@@ -41,6 +43,9 @@ class ProjectStockOnsiteWizard(models.TransientModel):
             qty_target = line.quantity
             delta = qty_target - qty_current
             
+            _logger.info("SYNC DELTA %s: current=%s, target=%s, delta=%s", 
+                         line.product_id.display_name, qty_current, qty_target, delta)
+
             if delta == 0:
                 continue
             
@@ -56,7 +61,7 @@ class ProjectStockOnsiteWizard(models.TransientModel):
                 qty_move = abs(delta)
 
             move_vals.append({
-                'description_picking': line.product_id.display_name,
+                'name': line.product_id.display_name,
                 'product_id': line.product_id.id,
                 'product_uom_qty': qty_move,
                 'product_uom': line.product_id.uom_id.id,
@@ -98,16 +103,12 @@ class ProjectStockOnsiteWizard(models.TransientModel):
         picking.action_confirm()
         picking.action_assign()
         
-        # Set quantities and validate (Odoo 19)
+        # Odoo 19: Use internal helper to set quantities correctly
         for move in picking.move_ids:
-            if move.state == 'assigned':
-                for move_line in move.move_line_ids:
-                    move_line.quantity = move_line.quantity_product_uom
+            move._set_quantity_done(move.product_uom_qty)
         
-        picking.button_validate()
-        
-        # Mark project as initialized
-        self.project_id.sudo().write({'is_stock_initialized': True})
+        # Use background-safe done action
+        picking._action_done()
 
         return {'type': 'ir.actions.client', 'tag': 'reload'}
 
