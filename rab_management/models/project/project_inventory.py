@@ -24,27 +24,31 @@ class ProjectProject(models.Model):
         if self.stock_location_id:
             return
 
-        # Cari parent location (WH/Stock)
-        warehouse = self.env.company.internal_transit_location_id.get_warehouse()
-        if not warehouse:
-             warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company_id.id)], limit=1)
+        # Cari warehouse utama perusahaan project ini
+        warehouse = self.env['stock.warehouse'].search([
+            ('company_id', '=', self.company_id.id or self.env.company.id)
+        ], limit=1)
 
+        # Gunakan lot_stock_id (misal: WH/Stock) sebagai parent
         parent_location = warehouse.lot_stock_id if warehouse else self.env.ref('stock.stock_location_stock', raise_if_not_found=False)
 
         if not parent_location:
-             parent_location = self.env['stock.location'].search([('usage', '=', 'internal'), ('company_id', '=', self.company_id.id)], limit=1)
+             parent_location = self.env['stock.location'].search([
+                 ('usage', '=', 'internal'), 
+                 ('company_id', '=', self.company_id.id or self.env.company.id)
+             ], limit=1)
 
         if not parent_location:
-            raise UserError(_("Cannot find a parent internal location for the project stock."))
+            raise UserError(_("Cannot find a parent internal location for the project stock. Please ensure a Warehouse is configured."))
 
         location = self.env['stock.location'].create({
             'name': f"Project: {self.name}",
             'usage': 'internal',
             'location_id': parent_location.id,
-            'company_id': self.company_id.id,
+            'company_id': self.company_id.id or self.env.company.id,
             'active': True,
         })
-        self.stock_location_id = location.id
+        self.sudo().write({'stock_location_id': location.id})
 
     def action_create_stock_location(self):
         """Manual action to create location for existing projects."""
