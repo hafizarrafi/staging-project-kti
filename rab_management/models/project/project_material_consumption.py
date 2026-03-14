@@ -1,90 +1,83 @@
+import math
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 class ProjectMaterialConsumption(models.Model):
     _name = 'project.material.consumption'
-    _description = 'Material Consumption tracking'
+    _description = 'Material Consumption Dashboard'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    _order = 'date desc, id desc'
 
-    name = fields.Char(
-        string='Reference',
-        required=True,
-        copy=False,
-        readonly=True,
-        default=lambda self: _('New')
-    )
     project_id = fields.Many2one(
         'project.project',
         string='Project',
         required=True,
-        tracking=True
+        ondelete='cascade',
+        index=True
     )
     date = fields.Date(
-        string='Date',
+        string='Last Update',
         default=fields.Date.today,
-        required=True,
-        tracking=True
+        required=True
     )
-    state = fields.Selection([
-        ('draft', 'Draft'),
-        ('confirmed', 'Confirmed'),
-        ('done', 'Done'),
-    ], string='Status', default='draft', tracking=True)
-
     line_ids = fields.One2many(
         'project.material.consumption.line',
         'consumption_id',
-        string='Consumption Lines',
+        string='Requirement Lines',
         copy=True
-    )
-
-    picking_id = fields.Many2one(
-        'stock.picking',
-        string='Consumption DO',
-        readonly=True,
-        copy=False
     )
 
     @api.onchange('project_id')
     def _onchange_project_id_load_requirements(self):
-        if not self.project_id:
-            self.line_ids = [(5, 0, 0)]
-            return
+        self.action_refresh_requirements()
 
-        # Get all material requirements from tasks in this project
-        tasks = self.env['project.task'].search([('project_id', '=', self.project_id.id)])
-        line_vals = []
-        
-        for task in tasks:
-            for mat in task.material_needed_ids:
-                # We use the weight (kg) as the required amount
-                line_vals.append((0, 0, {
-                    'task_id': task.id,
-                    'product_id': mat.product_id.id,
-                    'qty_required_kg': mat.weight or 0.0,
-                    'qty_used': 0.0,
-                }))
-        
-        self.line_ids = [(5, 0, 0)] + line_vals
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('project.material.consumption') or _('New')
-        return super().create(vals_list)
-
-    def action_confirm(self):
+    def action_refresh_requirements(self):
         for rec in self:
-            if not rec.line_ids:
-                raise UserError(_("Please add at least one line."))
-            rec.state = 'confirmed'
+            if not rec.project_id:
+                rec.line_ids = [(5, 0, 0)]
+                continue
+
+            # Get all material requirements from tasks in this project
+            tasks = self.env['project.task'].search([('project_id', '=', rec.project_id.id)])
+            
+            # Map existing lines to avoid duplicates and preserve selection if possible
+            existing_lines = {(l.task_id.id, l.product_id.id): l for l in rec.line_ids}
+            
+            line_vals = []
+            seen_requirements = set()
+            
+            for task in tasks:
+                for mat in task.material_needed_ids:
+                    key = (task.id, mat.product_id.id)
+                    seen_requirements.add(key)
+                    
+                    if key in existing_lines:
+                        # Update existing line quantities if needed
+                        line = existing_lines[key]
+                        line.write({
+                            'qty_required_kg': mat.weight or 0.0,
+                        })
+                    else:
+                        # Create new line
+                        line_vals.append((0, 0, {
+                            'task_id': task.id,
+                            'product_id': mat.product_id.id,
+                            'qty_required_kg': mat.weight or 0.0,
+                        }))
+            
+            # Remove lines that are no longer in tasks
+            for key, line in existing_lines.items():
+                if key not in seen_requirements:
+                    line_vals.append((2, line.id, 0))
+            
+            if line_vals:
+                rec.line_ids = line_vals
 
     def action_generate_picking(self):
         self.ensure_one()
-        if not self.line_ids:
-            raise UserError(_("No lines to process."))
+        selected_lines = self.line_ids.filtered(lambda l: l.is_selected and l.qty_to_issue_unit > 0)
+        
+        if not selected_lines:
+            raise UserError(_("Please select items with 'Qty to Issue' > 0."))
 
         picking_type = self.env['stock.picking.type'].search([
             ('code', '=', 'outgoing'),
@@ -97,35 +90,53 @@ class ProjectMaterialConsumption(models.Model):
         if not picking_type:
             raise UserError(_("No outgoing picking type found."))
 
-        # Consumption: from Project Location to Virtual Location (Customer/Scrap/etc)
-        src_location = self.project_id.stock_location_id
-        dest_location = picking_type.default_location_dest_id
-
-        if not src_location:
-            raise UserError(_("Project does not have a stock location."))
-
-        res = self.env['stock.picking'].create({
-            'picking_type_id': picking_type.id,
-            'location_id': src_location.id,
-            'location_dest_id': dest_location.id,
-            'origin': self.name,
+        # 1. Create a Log Record in project.material.issue
+        issue_log = self.env['project.material.issue'].create({
             'project_id': self.project_id.id,
-            'partner_id': self.project_id.partner_id.id,
-            'move_ids': [(0, 0, {
-                'name': self.name,
-                'product_id': line.product_id.id,
-                'product_uom_qty': line.qty_used,
-                'product_uom': line.product_id.uom_id.id,
-                'location_id': src_location.id,
-                'location_dest_id': dest_location.id,
-            }) for line in self.line_ids]
+            'date': fields.Date.today(),
+            'state': 'confirmed',
         })
-        self.picking_id = res.id
-        self.state = 'done'
+
+        # 2. Prepare Moves
+        move_vals = []
+        for line in selected_lines:
+            # Create Log Line
+            self.env['project.material.issue.line'].create({
+                'issue_id': issue_log.id,
+                'product_id': line.product_id.id,
+                'task_id': line.task_id.id,
+                'qty_required_kg': line.qty_required_kg,
+                'qty_issue_unit': line.qty_to_issue_unit,
+            })
+
+            move_vals.append((0, 0, {
+                'name': _('Consumption for %s') % line.task_id.name,
+                'product_id': line.product_id.id,
+                'product_uom_qty': line.qty_to_issue_unit,
+                'product_uom': line.product_id.uom_id.id,
+                'location_id': picking_type.default_location_src_id.id,
+                'location_dest_id': self.project_id.stock_location_id.id,
+            }))
+
+        # 3. Create Picking
+        picking = self.env['stock.picking'].create({
+            'picking_type_id': picking_type.id,
+            'location_id': picking_type.default_location_src_id.id,
+            'location_dest_id': self.project_id.stock_location_id.id,
+            'origin': _('Consumption Dashboard: %s') % self.project_id.name,
+            'move_ids': move_vals,
+        })
+        
+        issue_log.picking_id = picking.id
+        # issue_log.action_confirm() # Already confirmed above
+        
+        # Reset selection
+        selected_lines.write({'is_selected': False})
+
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'stock.picking',
-            'res_id': res.id,
+            'res_id': picking.id,
             'view_mode': 'form',
             'target': 'current',
         }
@@ -135,30 +146,40 @@ class ProjectMaterialConsumptionLine(models.Model):
     _description = 'Material Consumption Line'
 
     consumption_id = fields.Many2one('project.material.consumption', string='Consumption', ondelete='cascade')
+    is_selected = fields.Boolean(string='Select')
     product_id = fields.Many2one('product.product', string='Product', required=True)
-    task_id = fields.Many2one('project.task', string='Task')
+    task_id = fields.Many2one('project.task', string='Task/Subtask')
 
-    qty_available = fields.Float(string='Stok (uom)', compute='_compute_qty_available')
+    qty_available = fields.Float(string='Stok (uom)', compute='_compute_qty_status')
     qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
-    qty_used = fields.Float(string='Aktual (kg)', required=True, default=0.0)
-    qty_remaining = fields.Float(string='Sisa (kg)', compute='_compute_qty_remaining', store=True)
+    
+    qty_issued_unit = fields.Float(string='Sudah Terbit (unit)', compute='_compute_qty_status')
+    qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue', store=True, readonly=False)
 
     @api.depends('product_id', 'consumption_id.project_id.stock_location_id')
-    def _compute_qty_available(self):
+    def _compute_qty_status(self):
         for rec in self:
-            if not rec.product_id or not rec.consumption_id.project_id.stock_location_id:
-                rec.qty_available = 0.0
-                continue
-            
-            # Using Odoo's stock.quant to get real available quantity at project site
-            domain = [
-                ('product_id', '=', rec.product_id.id),
-                ('location_id', '=', rec.consumption_id.project_id.stock_location_id.id)
-            ]
-            quants = self.env['stock.quant'].search(domain)
-            rec.qty_available = sum(quants.mapped('quantity'))
+            # 1. Available Stock at site
+            rec.qty_available = 0.0
+            if rec.product_id and rec.consumption_id.project_id.stock_location_id:
+                quants = self.env['stock.quant'].search([
+                    ('product_id', '=', rec.product_id.id),
+                    ('location_id', '=', rec.consumption_id.project_id.stock_location_id.id)
+                ])
+                rec.qty_available = sum(quants.mapped('quantity'))
 
-    @api.depends('qty_required_kg', 'qty_used')
-    def _compute_qty_remaining(self):
+            # 2. Total Issued so far (from logs)
+            rec.qty_issued_unit = sum(self.env['project.material.issue.line'].search([
+                ('task_id', '=', rec.task_id.id),
+                ('product_id', '=', rec.product_id.id),
+                ('issue_id.state', '!=', 'cancel')
+            ]).mapped('qty_issue_unit'))
+
+    @api.depends('qty_required_kg', 'product_id.weight')
+    def _compute_qty_to_issue(self):
         for rec in self:
-            rec.qty_remaining = rec.qty_required_kg - rec.qty_used
+            weight = rec.product_id.weight or 0.0
+            if weight > 0:
+                rec.qty_to_issue_unit = math.ceil(rec.qty_required_kg / weight)
+            else:
+                rec.qty_to_issue_unit = 0
