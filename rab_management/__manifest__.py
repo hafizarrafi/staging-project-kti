@@ -44,6 +44,7 @@
             'views/project/project_inventory_wizard_view.xml',
             'views/project/project_material_issue_wizard_view.xml',
             'views/project/project_material_consumption_view.xml',
+            'views/project/project_material_consumption_wizard_view.xml',
             'views/project/project_inventory_view.xml',
             'views/project/project_inventory_view.xml',
             'views/budget_view.xml',

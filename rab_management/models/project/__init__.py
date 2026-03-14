@@ -13,3 +13,4 @@ from . import project_inventory_wizard
 from . import project_material_issue
 from . import project_material_issue_wizard
 from . import project_material_consumption
+from . import project_material_consumption_wizard

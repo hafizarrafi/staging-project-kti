@@ -193,12 +193,11 @@ class ProjectProject(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Material Consumptions',
-            'res_model': 'project.material.consumption',
-            'view_mode': 'list,form',
-            'domain': [('project_id', '=', self.id)],
+            'name': 'Material Consumption',
+            'res_model': 'project.material.consumption.wizard',
+            'view_mode': 'form',
             'context': {'default_project_id': self.id},
-            'target': 'current',
+            'target': 'new',
         }
 
     def action_sync_project_material(self):
