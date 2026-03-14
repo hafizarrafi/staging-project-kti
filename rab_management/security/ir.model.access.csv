@@ -26,3 +26,5 @@ access_project_material_issue,project.material.issue,model_project_material_issu
 access_project_material_issue_line,project.material.issue.line,model_project_material_issue_line,base.group_user,1,1,1,1
 access_project_material_consumption,project.material.consumption,model_project_material_consumption,base.group_user,1,1,1,1
 access_project_material_consumption_line,project.material.consumption.line,model_project_material_consumption_line,base.group_user,1,1,1,1
+access_project_material_consumption_wizard,project.material.consumption.wizard,model_project_material_consumption_wizard,base.group_user,1,1,1,1
+access_project_material_consumption_wizard_line,project.material.consumption.wizard.line,model_project_material_consumption_wizard_line,base.group_user,1,1,1,1
