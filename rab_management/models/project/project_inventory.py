@@ -11,13 +11,6 @@ class ProjectProject(models.Model):
         tracking=True,
         help="Location used for inventory related to this project."
     )
-    stock_location_id = fields.Many2one(
-        'stock.location',
-        string='Project Stock Location',
-        readonly=True,
-        tracking=True,
-        help="Location used for inventory related to this project."
-    )
 
     @api.model_create_multi
     def create(self, vals_list):

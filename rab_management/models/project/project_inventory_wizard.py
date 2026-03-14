@@ -61,14 +61,12 @@ class ProjectStockOnsiteWizard(models.TransientModel):
                 qty_move = abs(delta)
 
             move_vals.append({
-                'name': line.product_id.display_name,
                 'product_id': line.product_id.id,
                 'product_uom_qty': qty_move,
                 'product_uom': line.product_id.uom_id.id,
                 'location_id': src_loc,
                 'location_dest_id': dest_loc,
                 'company_id': self.project_id.company_id.id,
-                'state': 'draft',
             })
         
         if not move_vals:
