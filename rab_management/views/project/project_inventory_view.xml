@@ -8,7 +8,6 @@
             <field name="arch" type="xml">
                 <xpath expr="//header" position="inside">
                     <button name="action_init_stock_onsite" string="Initialize Stock On Site" type="object" class="btn-info" groups="stock.group_stock_manager"/>
-                    <button name="action_migrate_to_inventory" string="Migrate to Inventory" type="object" class="btn-warning" groups="stock.group_stock_manager" invisible="stock_location_id != False"/>
                     <button name="action_create_stock_location" string="Create Stock Location" type="object" invisible="stock_location_id != False" groups="base.group_no_one"/>
                 </xpath>
                 <xpath expr="//div[@name='button_box']" position="inside">

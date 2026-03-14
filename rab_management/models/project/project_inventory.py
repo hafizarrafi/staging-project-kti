@@ -76,8 +76,33 @@ class ProjectProject(models.Model):
 
     def action_init_stock_onsite(self):
         self.ensure_one()
+        is_new_location = False
         if not self.stock_location_id:
             self._create_stock_location()
+            is_new_location = True
+
+        ctx = {
+            'default_project_id': self.id,
+        }
+
+        # Jika ini adalah inisialisasi pertama (baru buat lokasi), 
+        # coba tarik data qty_on_site dari master material/equipment sebagai saran awal.
+        if is_new_location:
+            lines_data = []
+            for mat in self.material_master_ids.filtered(lambda m: m.qty_on_site > 0):
+                lines_data.append((0, 0, {
+                    'product_id': mat.product_id.id,
+                    'quantity': mat.qty_on_site,
+                }))
+            
+            for equip in self.equipment_master_ids.filtered(lambda e: e.qty_on_site > 0):
+                lines_data.append((0, 0, {
+                    'product_id': equip.product_id.id,
+                    'quantity': equip.qty_on_site,
+                }))
+            
+            if lines_data:
+                ctx['default_line_ids'] = lines_data
 
         return {
             'name': _('Initialize Stock On Site'),
@@ -85,40 +110,5 @@ class ProjectProject(models.Model):
             'res_model': 'project.stock.onsite.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {
-                'default_project_id': self.id,
-            }
+            'context': ctx,
         }
-
-    def action_migrate_to_inventory(self):
-        """Migrate legacy project data (qty_on_site) to the new inventory system."""
-        for rec in self:
-            if not rec.stock_location_id:
-                rec._create_stock_location()
-            
-            # Persiapkan data penyesuaian dari material master & equipment master
-            lines_data = []
-            
-            for mat in rec.material_master_ids.filtered(lambda m: m.qty_on_site > 0):
-                lines_data.append((0, 0, {
-                    'product_id': mat.product_id.id,
-                    'quantity': mat.qty_on_site,
-                }))
-            
-            for equip in rec.equipment_master_ids.filtered(lambda e: e.qty_on_site > 0):
-                lines_data.append((0, 0, {
-                    'product_id': equip.product_id.id,
-                    'quantity': equip.qty_on_site,
-                }))
-            
-            if not lines_data:
-                continue
-            
-            # Buat wizard secara programmatical untuk melakukan migrasi
-            wizard = self.env['project.stock.onsite.wizard'].create({
-                'project_id': rec.id,
-                'line_ids': lines_data,
-            })
-            wizard.action_confirm()
-
-        return True
