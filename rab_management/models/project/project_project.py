@@ -191,13 +191,21 @@ class ProjectProject(models.Model):
 
     def action_view_material_consumptions(self):
         self.ensure_one()
+        # Find or create singleton dashboard for this project
+        dashboard = self.env['project.material.consumption'].search([('project_id', '=', self.id)], limit=1)
+        if not dashboard:
+            dashboard = self.env['project.material.consumption'].create({'project_id': self.id})
+        
+        # Refresh lines to ensure they match task requirements
+        dashboard.action_refresh_requirements()
+        
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Material Consumption',
-            'res_model': 'project.material.consumption.wizard',
+            'name': 'Material Consumption Dashboard',
+            'res_model': 'project.material.consumption',
+            'res_id': dashboard.id,
             'view_mode': 'form',
-            'context': {'default_project_id': self.id},
-            'target': 'new',
+            'target': 'current',
         }
 
     def action_sync_project_material(self):
