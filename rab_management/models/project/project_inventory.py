@@ -90,8 +90,6 @@ class ProjectProject(models.Model):
 
     def action_init_stock_onsite(self):
         self.ensure_one()
-        if self.is_stock_initialized:
-            raise UserError(_("Stock for this project has already been initialized. Use the regular inventory adjustment or transfer for further changes."))
         
         is_new_location = False
         if not self.stock_location_id:
