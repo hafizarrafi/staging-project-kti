@@ -155,8 +155,8 @@
                                            column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
                                     <field name="qty_remaining_unit" readonly="1" string="Sisa" class="font-weight-bold"
                                            column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
-                                    <field name="product_uom_id" readonly="1" string="Satuan"/>
                                     <field name="qty_available" readonly="1" string="Stok site"/>
+                                    <field name="product_uom_id" readonly="1" string="Satuan"/>
                                 </list>
                             </field>
                         </page>
