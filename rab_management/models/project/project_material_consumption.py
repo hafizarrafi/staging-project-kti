@@ -27,6 +27,12 @@ class ProjectMaterialConsumption(models.Model):
     )
     search_product_id = fields.Many2one('product.product', string='Filter Produk')
     search_task_id = fields.Many2one('project.task', string='Filter Pekerjaan')
+    search_source_type = fields.Selection([
+        ('direct', 'Pekerjaan (Direct)'),
+        ('manual', 'Pekerjaan (Manual)'),
+        ('additional', 'Additional Purchase'),
+        ('equipment', 'Equipment Master')
+    ], string='Filter Sumber')
     line_ids = fields.One2many(
         'project.material.consumption.line',
         'consumption_id',
@@ -132,6 +138,10 @@ class ProjectMaterialConsumption(models.Model):
             seen_requirements = set()
 
             def process_requirement(vals, key):
+                # Filter by source type if set
+                if rec.search_source_type and vals.get('source_type') != rec.search_source_type:
+                    return
+
                 # Filter by product if set
                 if sf_product and vals.get('product_id') != sf_product.id:
                     return
