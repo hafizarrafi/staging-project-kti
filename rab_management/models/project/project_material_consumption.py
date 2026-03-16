@@ -19,6 +19,12 @@ class ProjectMaterialConsumption(models.Model):
         default=fields.Date.today,
         required=True
     )
+    display_stock_location = fields.Many2one(
+        'stock.location',
+        string='Source Location',
+        related='project_id.stock_location_id',
+        readonly=True
+    )
     line_ids = fields.One2many(
         'project.material.consumption.line',
         'consumption_id',
@@ -87,33 +93,48 @@ class ProjectMaterialConsumption(models.Model):
             # Get all material requirements from tasks in this project
             tasks = self.env['project.task'].search([('project_id', '=', rec.project_id.id)])
             
-            # Map existing lines to avoid duplicates and preserve selection if possible
-            existing_lines = {(l.task_id.id, l.product_id.id): l for l in rec.line_ids}
+            # Map existing lines
+            existing_lines = {(l.task_id.id, l.product_id.id, l.source_type): l for l in rec.line_ids}
             
             line_vals = []
             seen_requirements = set()
             
             for task in tasks:
-                for mat in task.material_needed_ids:
-                    key = (task.id, mat.product_id.id)
+                # Source 1: Direct product on task
+                if task.product_id and task.weight > 0:
+                    key = (task.id, task.product_id.id, 'direct')
                     seen_requirements.add(key)
                     
                     if key in existing_lines:
-                        # Update existing line quantities if needed
                         line = existing_lines[key]
-                        if line.qty_required_kg != (mat.weight or 0.0):
-                            line_vals.append((1, line.id, {
-                                'qty_required_kg': mat.weight or 0.0,
-                            }))
+                        if line.qty_required_kg != task.weight:
+                            line_vals.append((1, line.id, {'qty_required_kg': task.weight}))
                     else:
-                        # Create new line
+                        line_vals.append((0, 0, {
+                            'task_id': task.id,
+                            'product_id': task.product_id.id,
+                            'qty_required_kg': task.weight,
+                            'source_type': 'direct',
+                        }))
+                
+                # Source 2: Manual entries in material_needed_ids
+                for mat in task.material_needed_ids.filtered(lambda m: m.source == 'manual'):
+                    key = (task.id, mat.product_id.id, 'manual')
+                    seen_requirements.add(key)
+                    
+                    if key in existing_lines:
+                        line = existing_lines[key]
+                        if line.qty_required_kg != mat.weight:
+                            line_vals.append((1, line.id, {'qty_required_kg': mat.weight}))
+                    else:
                         line_vals.append((0, 0, {
                             'task_id': task.id,
                             'product_id': mat.product_id.id,
                             'qty_required_kg': mat.weight or 0.0,
+                            'source_type': 'manual',
                         }))
             
-            # Remove lines that are no longer in tasks
+            # Remove stale lines
             for key, line in existing_lines.items():
                 if key not in seen_requirements:
                     line_vals.append((2, line.id, 0))
@@ -129,15 +150,19 @@ class ProjectMaterialConsumption(models.Model):
         if not selected_summaries:
             raise UserError(_("Please calculate selection and ensure 'Akan Terbit' > 0."))
 
+        # Search for picking type specifically with "OUT" in sequence or name
         picking_type = self.env['stock.picking.type'].search([
             ('code', '=', 'outgoing'),
             ('warehouse_id.company_id', '=', self.project_id.company_id.id),
+            '|', ('sequence_id.name', 'ilike', 'OUT'), ('sequence_id.prefix', 'ilike', 'OUT')
         ], limit=1)
 
         if not picking_type:
-            # Fallback to any outgoing picking type
+            # Fallback to any outgoing that isn't POS or similar if possible
             picking_type = self.env['stock.picking.type'].search([
                 ('code', '=', 'outgoing'),
+                ('warehouse_id.company_id', '=', self.project_id.company_id.id),
+                ('name', 'not ilike', 'POS')
             ], limit=1)
 
         if not picking_type:
@@ -180,15 +205,18 @@ class ProjectMaterialConsumption(models.Model):
             })
 
         # Log individual requirements linked to this picking (optional but good for history)
+        # Log individual requirements linked to this picking
         selected_lines = self.line_ids.filtered(lambda l: l.is_selected)
         for line in selected_lines:
+            weight = line.product_id.weight or 0.0
+            est_units = math.ceil(line.qty_required_kg / weight) if weight > 0 else 0
+            
             self.env['project.material.issue.line'].create({
                 'issue_id': issue_log.id,
                 'product_id': line.product_id.id,
                 'task_id': line.task_id.id,
                 'qty_required_kg': line.qty_required_kg,
-                # We record what was technically required, though the picking is aggregated
-                'qty_issue_unit': 0.0, # Or maybe link to summary somehow
+                'qty_issue_unit': est_units, # Immediately set it so the dashboard updates
             })
 
             # Record aggregated issue details in log as well? 
@@ -223,6 +251,7 @@ class ProjectMaterialConsumptionLine(models.Model):
     is_selected = fields.Boolean(string='Select')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task/Subtask')
+    source_type = fields.Selection([('direct', 'Direct'), ('manual', 'Manual')], default='direct')
     parent_task_display_id = fields.Many2one('project.task', string='Task Utama', compute='_compute_task_display', store=True)
     subtask_display_name = fields.Char(string='Subtask', compute='_compute_task_display', store=True)
 

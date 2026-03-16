@@ -29,14 +29,18 @@
                         </h1>
                     </div>
                     <group>
-                        <field name="date"/>
+                        <group>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="display_stock_location" readonly="1"/>
+                        </group>
                     </group>
                     <notebook>
                         <page string="Inventory" name="inventory">
                             <field name="stock_quant_ids" readonly="1">
                                 <list string="Project Inventory">
                                     <field name="product_id"/>
-                                    <field name="location_id"/>
                                     <field name="quantity"/>
                                     <field name="product_uom_id" string="UoM"/>
                                 </list>
