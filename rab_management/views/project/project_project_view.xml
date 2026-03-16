@@ -319,12 +319,8 @@
                     icon="fa-list-alt" invisible="all_rab_count == 0">
                     <field string="Daftar RAB" name="all_rab_count" widget="statinfo"/>
                 </button>
-                <button class="oe_stat_button" type="object" name="action_view_material_issues"
-                    icon="fa-truck" string="Material Issue"/>
-                <button class="oe_stat_button" type="object" name="action_view_material_consumptions"
-                    icon="fa-flask" string="Consumption"/>
-                <button class="oe_stat_button" type="object" name="action_open_project_inventory"
-                    icon="fa-cubes" string="Project Inventory"/>
+                <button class="oe_stat_button" type="object" name="action_view_stock_management"
+                    icon="fa-archive" string="Stock Management"/>
             </xpath>
 
            <xpath expr="//page[@name='material_project']" position="after">

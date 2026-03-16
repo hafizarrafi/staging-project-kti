@@ -25,6 +25,25 @@ class ProjectMaterialConsumption(models.Model):
         string='Requirement Lines',
         copy=True
     )
+    issue_ids = fields.One2many(
+        'project.material.issue',
+        related='project_id.issue_ids',
+        string='Material Issue Logs'
+    )
+    stock_quant_ids = fields.Many2many(
+        'stock.quant',
+        string='Project Inventory',
+        compute='_compute_stock_quants'
+    )
+
+    def _compute_stock_quants(self):
+        for rec in self:
+            if rec.project_id.stock_location_id:
+                rec.stock_quant_ids = self.env['stock.quant'].search([
+                    ('location_id', 'child_of', rec.project_id.stock_location_id.id)
+                ])
+            else:
+                rec.stock_quant_ids = False
 
     @api.onchange('project_id')
     def _onchange_project_id_load_requirements(self):

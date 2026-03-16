@@ -189,7 +189,7 @@ class ProjectProject(models.Model):
             'target': 'new',
         }
 
-    def action_view_material_consumptions(self):
+    def action_view_stock_management(self):
         self.ensure_one()
         # Find or create singleton dashboard for this project
         dashboard = self.env['project.material.consumption'].search([('project_id', '=', self.id)], limit=1)
@@ -201,7 +201,7 @@ class ProjectProject(models.Model):
         
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Material Consumption Dashboard',
+            'name': 'Stock Management',
             'res_model': 'project.material.consumption',
             'res_id': dashboard.id,
             'view_mode': 'form',
