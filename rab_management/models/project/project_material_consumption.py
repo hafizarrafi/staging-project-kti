@@ -90,27 +90,54 @@ class ProjectMaterialConsumption(models.Model):
         if not selected_lines:
             return
             
+        is_task_source = self.search_source_type in ['task_primary', 'task_additional']
+            
         # Group by product_id
-        aggregation = {} # product_id -> (weight, units)
+        aggregation = {} # product_id -> {weight, units, any_issued, fully_issued}
         for line in selected_lines:
             pid = line.product_id.id
-            curr_weight, curr_units = aggregation.get(pid, (0.0, 0.0))
+            if pid not in aggregation:
+                aggregation[pid] = {
+                    'weight': 0.0, 
+                    'units': 0.0, 
+                    'any_issued': False, 
+                    'fully_issued': True, # Start True, will be ANDed
+                    'product': line.product_id
+                }
             
-            # Tasks must be issued in full (ignore already issued for suggestion)
-            # Manual/Eq allow partial issuance (suggest remaining)
-            is_task = line.source_type in ['task_primary', 'task_additional']
-            qty_to_use = line.qty_required_unit if is_task else line.qty_remaining_unit
+            data = aggregation[pid]
+            data['weight'] += line.qty_required_kg
+            data['any_issued'] = data['any_issued'] or (line.qty_issued_unit > 0)
+            data['fully_issued'] = data['fully_issued'] and (line.qty_remaining_unit <= 0)
             
-            aggregation[pid] = (curr_weight + line.qty_required_kg, curr_units + qty_to_use)
-            
+            if not is_task_source:
+                # Piece-based aggregation for manual/eq
+                data['units'] += line.qty_remaining_unit
+        
         summary_vals = []
-        for pid, (weight, units) in aggregation.items():
+        for pid, data in aggregation.items():
+            units = data['units']
+            if is_task_source:
+                # Weight-first calculation for tasks
+                p_weight = data['product'].weight or 0.0
+                units = math.ceil(data['weight'] / p_weight) if p_weight > 0 else 0
+            
+            # Decide if readonly based on user rules
+            # Pattern A (Tasks): Readonly if ANY of selected are issued
+            # Pattern B (Manual): Readonly ONLY if ALL of selected are fully issued
+            is_readonly = False
+            if is_task_source:
+                is_readonly = data['any_issued']
+            else:
+                is_readonly = data['fully_issued']
+
             summary_vals.append((0, 0, {
                 'consumption_id': self.id,
                 'product_id': pid,
-                'total_weight_kg': weight,
+                'total_weight_kg': data['weight'],
                 'total_qty_unit': units,
                 'qty_to_issue_unit': units,
+                'is_readonly': is_readonly,
             }))
         self.summary_ids = summary_vals
 
@@ -571,11 +598,4 @@ class ProjectMaterialConsumptionSummary(models.Model):
     total_weight_kg = fields.Float(string='Total Required (kg)', digits=(16, 2))
     total_qty_unit = fields.Float(string='Total Required (unit)', digits=(16, 2))
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', digits=(16, 2))
-    is_readonly = fields.Boolean(compute='_compute_is_readonly')
-
-    @api.depends('consumption_id.search_source_type')
-    def _compute_is_readonly(self):
-        for rec in self:
-            # Task sources are strictly full-issue (readonly)
-            source = rec.consumption_id.search_source_type
-            rec.is_readonly = source in ['task_primary', 'task_additional']
+    is_readonly = fields.Boolean(string='Readonly') # Calculated during aggregation
