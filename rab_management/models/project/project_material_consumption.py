@@ -223,7 +223,7 @@ class ProjectMaterialConsumptionLine(models.Model):
     is_selected = fields.Boolean(string='Select')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task/Subtask')
-    parent_task_display_id = fields.Many2one('project.task', string='Task Utama/Subtask', compute='_compute_task_display')
+    parent_task_display_id = fields.Many2one('project.task', string='Task Utama/Subtask', compute='_compute_task_display', store=True)
 
     qty_available = fields.Float(string='Stok site', compute='_compute_qty_status')
     qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
