@@ -95,7 +95,8 @@ class ProjectMaterialConsumption(models.Model):
         for line in selected_lines:
             pid = line.product_id.id
             curr_weight, curr_units = aggregation.get(pid, (0.0, 0.0))
-            aggregation[pid] = (curr_weight + line.qty_required_kg, curr_units + line.qty_required_unit)
+            # Use remaining units for suggestion
+            aggregation[pid] = (curr_weight + line.qty_required_kg, curr_units + line.qty_remaining_unit)
             
         summary_vals = []
         for pid, (weight, units) in aggregation.items():
@@ -104,6 +105,7 @@ class ProjectMaterialConsumption(models.Model):
                 'product_id': pid,
                 'total_weight_kg': weight,
                 'total_qty_unit': units,
+                'qty_to_issue_unit': units,
             }))
         self.summary_ids = summary_vals
 
@@ -409,11 +411,14 @@ class ProjectMaterialConsumptionLine(models.Model):
 
     qty_available = fields.Float(string='Stok site', compute='_compute_qty_available')
     qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
-    qty_required_unit = fields.Float(string='Dibutuhkan (unit)', digits=(16, 2))
+    qty_required_unit = fields.Float(string='Butuh (unit)', digits=(16, 2))
+    qty_issued_unit = fields.Float(string='Sudah Terbit (unit)', compute='_compute_qty_issued', store=False)
+    qty_remaining_unit = fields.Float(string='Sisa (unit)', compute='_compute_qty_remaining', store=False)
+    qty_to_issue_unit = fields.Float(string='Butuh (unit)', compute='_compute_qty_to_issue', store=False)
     
-    qty_issued_unit = fields.Float(string='Issued (unit)', compute='_compute_qty_issued')
-    qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue')
-    is_fully_issued = fields.Boolean(string='Status', compute='_compute_issue_status', store=False)
+    is_fully_issued = fields.Boolean(string='Terbit Penuh', compute='_compute_issue_status', store=False)
+    is_partially_issued = fields.Boolean(string='Terbit Sebagian', compute='_compute_issue_status', store=False)
+    allow_partial_issue = fields.Boolean(string='Allow Partial', compute='_compute_allow_partial', store=False)
 
     @api.depends('task_id', 'task_id.parent_id', 'task_id.name', 'source_type', 'additional_purchase_id', 'equipment_master_id')
     def _compute_task_display(self):
@@ -502,11 +507,22 @@ class ProjectMaterialConsumptionLine(models.Model):
             key = (rec.task_id.id, rec.product_id.id, rec.additional_purchase_id.id, rec.equipment_master_id.id)
             rec.qty_issued_unit = amounts.get(key, 0.0)
 
-    @api.depends('qty_issued_unit')
-    def _compute_issue_status(self):
-        # Simply check if ANY quantity has been issued in a document
+    @api.depends('qty_issued_unit', 'qty_required_unit')
+    def _compute_qty_remaining(self):
         for rec in self:
-            rec.is_fully_issued = rec.qty_issued_unit > 0.0
+            rec.qty_remaining_unit = max(0.0, rec.qty_required_unit - rec.qty_issued_unit)
+
+    @api.depends('qty_issued_unit', 'qty_required_unit')
+    def _compute_issue_status(self):
+        for rec in self:
+            rec.is_fully_issued = rec.qty_issued_unit >= rec.qty_required_unit and rec.qty_required_unit > 0
+            rec.is_partially_issued = 0 < rec.qty_issued_unit < rec.qty_required_unit
+
+    @api.depends('source_type')
+    def _compute_allow_partial(self):
+        for rec in self:
+            # Partial issue ONLY for non-task sources
+            rec.allow_partial_issue = rec.source_type not in ['task_primary', 'task_additional']
 
     @api.depends('qty_required_kg', 'product_id.weight', 'qty_required_unit')
     def _compute_qty_to_issue(self):
@@ -522,14 +538,13 @@ class ProjectMaterialConsumptionSummary(models.Model):
     _name = 'project.material.consumption.summary'
     _description = 'Material Consumption Aggregated Summary'
 
-    consumption_id = fields.Many2one('project.material.consumption', ondelete='cascade')
-    product_id = fields.Many2one('product.product', string='Product', required=True)
-    total_weight_kg = fields.Float(string='Total Required (kg)', digits=(16, 2))
     total_qty_unit = fields.Float(string='Total Required (unit)', digits=(16, 2))
-    qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue', store=True)
+    qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', digits=(16, 2))
+    is_readonly = fields.Boolean(compute='_compute_is_readonly')
 
-    @api.depends('total_weight_kg', 'product_id.weight', 'total_qty_unit')
-    def _compute_qty_to_issue(self):
+    @api.depends('consumption_id.search_source_type')
+    def _compute_is_readonly(self):
         for rec in self:
-            # We trust the aggregated total_qty_unit as it is already math.ceil per line
-            rec.qty_to_issue_unit = rec.total_qty_unit
+            # Task sources are strictly full-issue (readonly)
+            source = rec.consumption_id.search_source_type
+            rec.is_readonly = source in ['task_primary', 'task_additional']

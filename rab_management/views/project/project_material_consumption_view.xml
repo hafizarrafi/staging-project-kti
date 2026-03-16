@@ -56,12 +56,14 @@
 
                             <!-- 2. TOP TABLE: AGGREGATED SUMMARY -->
                             <separator string="1. Item yang Akan Diterbitkan (Agregat)"/>
-                            <field name="summary_ids" readonly="1">
-                                <list string="Aggregated DO List">
-                                    <field name="product_id"/>
-                                    <field name="total_weight_kg" string="Total Berat (kg)"/>
-                                    <field name="total_qty_unit" string="Total Unit"/>
-                                    <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold"/>
+                            <field name="summary_ids">
+                                <list string="Aggregated DO List" editable="bottom" create="0" delete="0">
+                                    <field name="is_readonly" column_invisible="True"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="total_weight_kg" string="Total Berat (kg)" readonly="1"/>
+                                    <field name="total_qty_unit" string="Total Sisa (unit)" readonly="1"/>
+                                    <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
+                                           readonly="is_readonly"/>
                                 </list>
                             </field>
 
@@ -126,8 +128,11 @@
                             <!-- 5. BOTTOM TABLE: INDIVIDUAL REQUIREMENTS -->
                             <separator string="3. Daftar Kebutuhan"/>
                             <field name="line_ids">
-                                <list editable="bottom" create="0" delete="0" decoration-muted="is_fully_issued">
+                                <list editable="bottom" create="0" delete="0" 
+                                      decoration-muted="is_fully_issued"
+                                      decoration-warning="is_partially_issued">
                                     <field name="is_fully_issued" column_invisible="True"/>
+                                    <field name="is_partially_issued" column_invisible="True"/>
                                     <field name="source_type" column_invisible="True"/>
                                     <field name="is_selected" string="Select" readonly="is_fully_issued"/>
                                     
@@ -142,15 +147,15 @@
                                            column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
                                     
                                     <field name="product_id" readonly="1"/>
-                                    <field name="qty_available" readonly="1" string="Stok site"/>
                                     
                                     <field name="qty_required_kg" readonly="1" string="Butuh (kg)"
                                            column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
                                     
-                                    <field name="qty_required_unit" readonly="1" string="Butuh (unit)"
-                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
-                                    <field name="product_uom_id" readonly="1" string="Satuan"
-                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
+                                    <field name="qty_required_unit" readonly="1" string="Butuh (unit)"/>
+                                    <field name="qty_issued_unit" readonly="1" string="Terbit"/>
+                                    <field name="qty_remaining_unit" readonly="1" string="Sisa" class="font-weight-bold"/>
+                                    <field name="product_uom_id" readonly="1" string="Satuan"/>
+                                    <field name="qty_available" readonly="1" string="Stok site"/>
                                 </list>
                             </field>
                         </page>
