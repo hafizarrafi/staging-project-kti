@@ -1,4 +1,6 @@
+import math
 from odoo import models, fields, api
+from odoo.fields import Datetime
 
 
 class ProjectAdditionalPurchase(models.Model):
@@ -65,7 +67,6 @@ class ProjectAdditionalPurchase(models.Model):
 
     @api.depends('total_weight', 'product_weight')
     def _compute_total_qty(self):
-        import math
         for rec in self:
             if rec.total_weight and rec.product_weight:
                 rec.total_qty = math.ceil(rec.total_weight / rec.product_weight)
@@ -105,7 +106,6 @@ class ProjectAdditionalPurchase(models.Model):
 
     @api.depends('source', 'task_id', 'create_date')
     def _compute_source_details(self):
-        from odoo.fields import Datetime
         for rec in self:
             if rec.source == 'task' and rec.task_id:
                 rec.source_details = rec.task_id.name

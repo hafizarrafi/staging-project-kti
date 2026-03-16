@@ -378,10 +378,9 @@ class ProjectMaterialConsumption(models.Model):
         
         issue_log.picking_id = picking.id
 
-        # 3. Create Moves & Log Lines
+        # Create stock moves and log lines per summary item
         selected_lines = self.line_ids.filtered(lambda l: l.is_selected)
         for summary in selected_summaries:
-            # Create move directly
             self.env['stock.move'].create({
                 'picking_id': picking.id,
                 'description_picking': summary.product_id.name,
@@ -394,37 +393,36 @@ class ProjectMaterialConsumption(models.Model):
                 'company_id': self.project_id.company_id.id,
             })
 
-            # 3b. Logic for Task sources (Satisfy all selected weights)
             is_task_source = self.search_source_type in ['task_primary', 'task_additional']
             product_lines = selected_lines.filtered(lambda l: l.product_id == summary.product_id)
-            
+
             if is_task_source:
-                # For tasks, we just mark all selected lines as fully issued in weight terms
+                # Task sources: log each selected line as fully issued in weight terms
                 for line in product_lines:
                     prod_weight = line.product_id.weight or 0.0
-                    decimal_units = (line.qty_required_kg / prod_weight) if prod_weight > 0 else 1.0 # default to 1 if no weight? but user said 10kg/30kg = 0.3
-                    
+                    decimal_units = (line.qty_required_kg / prod_weight) if prod_weight > 0 else 1.0
+
                     self.env['project.material.issue.line'].create({
                         'issue_id': issue_log.id,
                         'product_id': line.product_id.id,
                         'task_id': line.task_id.id,
                         'qty_required_kg': line.qty_required_kg,
-                        'qty_issue_unit': decimal_units, # Log fractional pieces (0.3)
-                        'qty_issued_weight': line.qty_required_kg, # Dashboard uses this for aggregation
+                        'qty_issue_unit': decimal_units,
+                        'qty_issued_weight': line.qty_required_kg,
                     })
             else:
-                # Distribute the DO quantity (summary.qty_to_issue_unit) among individual lines (Pcs)
+                # Distribute the DO quantity among individual lines (piece-based)
                 remaining_to_distribute = summary.qty_to_issue_unit
                 for line in product_lines:
                     if remaining_to_distribute <= 0:
                         break
-                    
+
                     line_remaining = line.qty_remaining_unit
                     if line_remaining <= 0:
                         continue
-                        
+
                     issue_qty = min(line_remaining, remaining_to_distribute)
-                    
+
                     self.env['project.material.issue.line'].create({
                         'issue_id': issue_log.id,
                         'product_id': line.product_id.id,
@@ -436,8 +434,8 @@ class ProjectMaterialConsumption(models.Model):
                         'qty_issued_weight': issue_qty * (line.product_id.weight or 0.0),
                     })
                     remaining_to_distribute -= issue_qty
-                
-                # Edge case: If there is extra quantity, attribute it to the last line
+
+                # Edge case: attribute any leftover quantity to the last log line
                 if remaining_to_distribute > 0 and product_lines:
                     log_line = self.env['project.material.issue.line'].search([
                         ('issue_id', '=', issue_log.id),
@@ -446,17 +444,10 @@ class ProjectMaterialConsumption(models.Model):
                     if log_line:
                         log_line.qty_issue_unit += remaining_to_distribute
 
-            # Record aggregated issue details in log as well? 
-            # For now, let's just mark the lines as processed if needed
-            # In current logic, qty_issued_unit is computed from issue lines.
-            
-        # Re-compute: we should probably update how qty_issued is calculated 
-        # but for now let's keep it simple.
-        
         # 4. Process Picking
         picking.action_confirm()
         picking.action_assign()
-        
+
         # Reset selection and summary
         selected_lines.write({'is_selected': False})
         self.summary_ids.unlink()

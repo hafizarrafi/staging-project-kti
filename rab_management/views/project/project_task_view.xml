@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="project.view_task_form2"/>
         <field name="arch" type="xml">
             <!-- Add dimension fields after the task_properties field -->
-             <xpath expr="//field[@name='task_properties']" position="after">
+            <xpath expr="//field[@name='task_properties']" position="after">
 
                 <!-- 1. PRODUK / BAHAN -->
                 <group string="Produk / Bahan">

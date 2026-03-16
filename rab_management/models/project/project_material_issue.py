@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-import math
+
 
 class ProjectMaterialIssue(models.Model):
     _name = 'project.material.issue'
