@@ -90,7 +90,8 @@ class ProjectMaterialConsumption(models.Model):
                 rec.line_ids = [(5, 0, 0)]
                 continue
 
-            # Get all material requirements from tasks in this project
+            # Get all tasks in this project. 
+            # We search recursively by checking if project_id is set or if it's a child of a task in the project.
             tasks = self.env['project.task'].search([('project_id', '=', rec.project_id.id)])
             
             # Map existing lines
@@ -100,8 +101,9 @@ class ProjectMaterialConsumption(models.Model):
             seen_requirements = set()
             
             for task in tasks:
-                # Source 1: Direct product on task
+                # 1. Direct product on the task itself
                 if task.product_id and task.weight > 0:
+                    # We use (task_id, product_id, 'direct') as uniqueness key
                     key = (task.id, task.product_id.id, 'direct')
                     seen_requirements.add(key)
                     
@@ -117,8 +119,13 @@ class ProjectMaterialConsumption(models.Model):
                             'source_type': 'direct',
                         }))
                 
-                # Source 2: Manual entries in material_needed_ids
-                for mat in task.material_needed_ids.filtered(lambda m: m.source == 'manual'):
+                # 2. Individual manual requirements
+                for mat in task.material_needed_ids:
+                    # IMPORTANT: Skip 'subtask' source because that's an aggregate roll-up from children.
+                    # We only show 'manual' requirements here to maintain granularity.
+                    if mat.source != 'manual':
+                        continue
+                        
                     key = (task.id, mat.product_id.id, 'manual')
                     seen_requirements.add(key)
                     
@@ -259,17 +266,26 @@ class ProjectMaterialConsumptionLine(models.Model):
     qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
     
     qty_issued_unit = fields.Float(string='Issued (unit)', compute='_compute_qty_issued')
-    qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue', store=True, readonly=False)
-    is_fully_issued = fields.Boolean(string='Status', compute='_compute_issue_status', store=True)
+    qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue')
+    is_fully_issued = fields.Boolean(string='Status', compute='_compute_issue_status', store=False)
 
     @api.depends('task_id', 'task_id.parent_id', 'task_id.name')
     def _compute_task_display(self):
         for rec in self:
-            if rec.task_id.parent_id:
-                rec.parent_task_display_id = rec.task_id.parent_id.id
-                rec.subtask_display_name = rec.task_id.name
+            if rec.task_id:
+                # Find the root task (top level)
+                parent = rec.task_id
+                while parent.parent_id:
+                    parent = parent.parent_id
+                rec.parent_task_display_id = parent.id
+                
+                # Show subtask name if it's not the root itself
+                if rec.task_id.id != parent.id:
+                    rec.subtask_display_name = rec.task_id.name
+                else:
+                    rec.subtask_display_name = False
             else:
-                rec.parent_task_display_id = rec.task_id.id
+                rec.parent_task_display_id = False
                 rec.subtask_display_name = False
 
     def _compute_qty_available(self):
