@@ -130,14 +130,18 @@ class ProjectMaterialConsumption(models.Model):
 
         picking_type = self.env['stock.picking.type'].search([
             ('code', '=', 'outgoing'),
+            ('sequence_code', '=', 'OUT'),
             ('warehouse_id.company_id', '=', self.project_id.company_id.id),
         ], limit=1)
 
         if not picking_type:
-            picking_type = self.env['stock.picking.type'].search([('code', '=', 'outgoing')], limit=1)
+            # Fallback to any OUT picking type
+            picking_type = self.env['stock.picking.type'].search([
+                ('sequence_code', '=', 'OUT'),
+            ], limit=1)
 
         if not picking_type:
-            raise UserError(_("No outgoing picking type found."))
+            raise UserError(_("No 'OUT' picking type found."))
 
         # 1. Create a Log Record in project.material.issue
         issue_log = self.env['project.material.issue'].create({
@@ -149,8 +153,11 @@ class ProjectMaterialConsumption(models.Model):
         # 2. Create Picking
         picking = self.env['stock.picking'].create({
             'picking_type_id': picking_type.id,
-            'location_id': picking_type.default_location_src_id.id,
-            'location_dest_id': self.project_id.stock_location_id.id,
+            'location_id': self.project_id.stock_location_id.id or picking_type.default_location_src_id.id,
+            'location_dest_id': picking_type.default_location_dest_id.id, # Customer or project usage? User said get from source project location.
+            # Wait, user said: "pastinya stock harus mengambil dari source location project, bukan parent inventory".
+            # Picking OUT usually moves from Internal (Source) to Customer (Dest).
+            # If "source location project" is where we TAKE FROM, then it's location_id.
             'origin': _('Consumption Dashboard: %s') % self.project_id.name,
             'company_id': self.project_id.company_id.id,
         })
@@ -162,11 +169,12 @@ class ProjectMaterialConsumption(models.Model):
             # Create move directly
             self.env['stock.move'].create({
                 'picking_id': picking.id,
+                'name': summary.product_id.name,
                 'product_id': summary.product_id.id,
                 'product_uom_qty': summary.qty_to_issue_unit,
                 'product_uom': summary.product_id.uom_id.id,
-                'location_id': picking_type.default_location_src_id.id,
-                'location_dest_id': self.project_id.stock_location_id.id,
+                'location_id': picking.location_id.id,
+                'location_dest_id': picking.location_dest_id.id,
                 'origin': picking.origin,
                 'company_id': self.project_id.company_id.id,
             })
@@ -209,20 +217,30 @@ class ProjectMaterialConsumption(models.Model):
 class ProjectMaterialConsumptionLine(models.Model):
     _name = 'project.material.consumption.line'
     _description = 'Material Consumption Line'
+    _order = 'is_fully_issued, parent_task_display_id, task_id, id'
 
     consumption_id = fields.Many2one('project.material.consumption', string='Consumption', ondelete='cascade')
     is_selected = fields.Boolean(string='Select')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task/Subtask')
-    parent_task_id = fields.Many2one('project.task', related='task_id.parent_id', string='Main Task', store=True)
+    parent_task_display_id = fields.Many2one('project.task', string='Task Utama/Subtask', compute='_compute_task_display')
 
-    qty_available = fields.Float(string='Stok (uom)', compute='_compute_qty_status')
+    qty_available = fields.Float(string='Stok site', compute='_compute_qty_status')
     qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
     
     qty_issued_unit = fields.Float(string='Sudah Terbit (unit)', compute='_compute_qty_status')
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue', store=True, readonly=False)
+    is_fully_issued = fields.Boolean(string='Fully Issued', compute='_compute_qty_status', store=True)
 
-    @api.depends('product_id', 'consumption_id.project_id.stock_location_id')
+    @api.depends('task_id')
+    def _compute_task_display(self):
+        for rec in self:
+            if rec.task_id.parent_id:
+                rec.parent_task_display_id = rec.task_id.parent_id.id
+            else:
+                rec.parent_task_display_id = rec.task_id.id
+
+    @api.depends('product_id', 'consumption_id.project_id.stock_location_id', 'task_id')
     def _compute_qty_status(self):
         for rec in self:
             # 1. Available Stock at site
@@ -240,6 +258,11 @@ class ProjectMaterialConsumptionLine(models.Model):
                 ('product_id', '=', rec.product_id.id),
                 ('issue_id.state', '!=', 'cancel')
             ]).mapped('qty_issue_unit'))
+
+            # Check if fully issued
+            weight = rec.product_id.weight or 0.0
+            total_req_units = math.ceil(rec.qty_required_kg / weight) if weight > 0 else 0
+            rec.is_fully_issued = rec.qty_issued_unit >= total_req_units
 
     @api.depends('qty_required_kg', 'product_id.weight')
     def _compute_qty_to_issue(self):

@@ -63,13 +63,15 @@
                             <!-- BOTTOM TABLE: INDIVIDUAL REQUIREMENTS -->
                             <separator string="2. Daftar Kebutuhan (Pilih untuk Agregasi)"/>
                             <field name="line_ids">
-                                <list editable="bottom" create="0" delete="0">
-                                    <field name="is_selected" string="Select"/>
-                                    <field name="parent_task_id" readonly="1" string="Task Utama"/>
+                                <list editable="bottom" create="0" delete="0" decoration-muted="is_fully_issued">
+                                    <field name="is_fully_issued" column_invisible="True"/>
+                                    <field name="is_selected" string="Select" readonly="is_fully_issued"/>
+                                    <field name="parent_task_display_id" readonly="1" string="Task Utama"/>
                                     <field name="task_id" readonly="1" string="Subtask"/>
                                     <field name="product_id" readonly="1"/>
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                     <field name="qty_required_kg" readonly="1" string="Butuh (kg)"/>
+                                    <field name="qty_issued_unit" readonly="1" string="Terbit (unit)"/>
                                 </list>
                             </field>
                         </page>
