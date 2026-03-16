@@ -28,19 +28,19 @@ class ProjectMaterialConsumption(models.Model):
     search_product_id = fields.Many2one('product.product', string='Filter Produk')
     search_task_id = fields.Many2one('project.task', string='Filter Pekerjaan')
     search_source_type = fields.Selection([
-        ('direct', 'Pekerjaan Utama'),
-        ('manual', 'Pekerjaan Additional'),
+        ('task_primary', 'Pekerjaan Utama'),
+        ('task_additional', 'Pekerjaan Additional'),
         ('additional', 'Additional Material'),
         ('equipment_primary', 'Equipment'),
         ('equipment_additional', 'Equipment Additional')
-    ], string='Filter Sumber', default='direct')
+    ], string='Filter Sumber', default='task_primary')
 
-    def action_filter_direct(self):
-        self.search_source_type = 'direct'
+    def action_filter_task_primary(self):
+        self.search_source_type = 'task_primary'
         return self.action_refresh_requirements()
 
-    def action_filter_manual(self):
-        self.search_source_type = 'manual'
+    def action_filter_task_additional(self):
+        self.search_source_type = 'task_additional'
         return self.action_refresh_requirements()
 
     def action_filter_additional_material(self):
@@ -129,6 +129,12 @@ class ProjectMaterialConsumption(models.Model):
             tasks_domain = [('project_id', '=', rec.project_id.id)]
             if sf_task:
                 tasks_domain.append(('id', 'child_of', sf_task.id))
+            
+            if rec.search_source_type == 'task_primary':
+                tasks_domain.append(('job_type', '=', 'primary'))
+            elif rec.search_source_type == 'task_additional':
+                tasks_domain.append(('job_type', '=', 'additional'))
+            
             tasks = self.env['project.task'].search(tasks_domain)
             
             # 2. ADDITIONAL PURCHASE SOURCE
@@ -189,25 +195,27 @@ class ProjectMaterialConsumption(models.Model):
 
             # PROCESS TASK REQUIREMENTS
             for task in tasks:
+                source_type = 'task_primary' if task.job_type == 'primary' else 'task_additional'
+                
                 # Direct product on task
                 if task.product_id:
-                    key = (task.id, task.product_id.id, 'direct', False, False)
+                    key = (task.id, task.product_id.id, source_type, False, False)
                     process_requirement({
                         'task_id': task.id,
                         'product_id': task.product_id.id,
                         'qty_required_kg': task.weight,
-                        'source_type': 'direct',
+                        'source_type': source_type,
                     }, key)
                 
                 # Manual entries
                 for mat in task.material_needed_ids:
                     if mat.source != 'manual': continue
-                    key = (task.id, mat.product_id.id, 'manual', False, False)
+                    key = (task.id, mat.product_id.id, source_type, False, False)
                     process_requirement({
                         'task_id': task.id,
                         'product_id': mat.product_id.id,
                         'qty_required_kg': mat.weight or 0.0,
-                        'source_type': 'manual',
+                        'source_type': source_type,
                     }, key)
 
             # PROCESS ADDITIONAL PURCHASES
@@ -356,12 +364,12 @@ class ProjectMaterialConsumptionLine(models.Model):
     equipment_master_id = fields.Many2one('project.equipment.master', string='Equipment Line')
     
     source_type = fields.Selection([
-        ('direct', 'Pekerjaan Utama'), 
-        ('manual', 'Pekerjaan Additional'),
+        ('task_primary', 'Pekerjaan Utama'),
+        ('task_additional', 'Pekerjaan Additional'),
         ('additional', 'Additional Material'),
         ('equipment_primary', 'Equipment'),
         ('equipment_additional', 'Equipment Additional')
-    ], string='Sumber', default='direct')
+    ], string='Sumber', default='task_primary')
     
     product_uom_id = fields.Many2one('uom.uom', string='UoM', related='product_id.uom_id', readonly=True)
     
@@ -381,11 +389,11 @@ class ProjectMaterialConsumptionLine(models.Model):
         for rec in self:
             if rec.source_type == 'additional' and rec.additional_purchase_id:
                 rec.parent_task_display_id = False
-                rec.subtask_display_name = _("Purchase: %s") % rec.additional_purchase_id.source_details
-            elif rec.source_type == 'equipment' and rec.equipment_master_id:
+                rec.subtask_display_name = rec.additional_purchase_id.source_details
+            elif rec.source_type in ['equipment_primary', 'equipment_additional'] and rec.equipment_master_id:
                 rec.parent_task_display_id = False
                 rec.subtask_display_name = _("Equipment: %s") % (rec.equipment_master_id.job_type or '')
-            elif rec.task_id:
+            elif rec.source_type in ['task_primary', 'task_additional'] and rec.task_id:
                 # Find the root task (top level)
                 parent = rec.task_id
                 while parent.parent_id:
