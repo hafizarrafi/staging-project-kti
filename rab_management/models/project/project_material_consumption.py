@@ -95,8 +95,13 @@ class ProjectMaterialConsumption(models.Model):
         for line in selected_lines:
             pid = line.product_id.id
             curr_weight, curr_units = aggregation.get(pid, (0.0, 0.0))
-            # Use remaining units for suggestion
-            aggregation[pid] = (curr_weight + line.qty_required_kg, curr_units + line.qty_remaining_unit)
+            
+            # Tasks must be issued in full (ignore already issued for suggestion)
+            # Manual/Eq allow partial issuance (suggest remaining)
+            is_task = line.source_type in ['task_primary', 'task_additional']
+            qty_to_use = line.qty_required_unit if is_task else line.qty_remaining_unit
+            
+            aggregation[pid] = (curr_weight + line.qty_required_kg, curr_units + qty_to_use)
             
         summary_vals = []
         for pid, (weight, units) in aggregation.items():

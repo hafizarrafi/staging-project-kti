@@ -152,8 +152,10 @@
                                            column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
                                     
                                     <field name="qty_required_unit" readonly="1" string="Butuh (unit)"/>
-                                    <field name="qty_issued_unit" readonly="1" string="Terbit"/>
-                                    <field name="qty_remaining_unit" readonly="1" string="Sisa" class="font-weight-bold"/>
+                                    <field name="qty_issued_unit" readonly="1" string="Terbit"
+                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
+                                    <field name="qty_remaining_unit" readonly="1" string="Sisa" class="font-weight-bold"
+                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
                                     <field name="product_uom_id" readonly="1" string="Satuan"/>
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                 </list>
