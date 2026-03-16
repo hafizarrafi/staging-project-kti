@@ -116,9 +116,6 @@ class ProjectMaterialConsumption(models.Model):
             else:
                 rec.stock_quant_ids = False
 
-    @api.onchange('project_id')
-    def _onchange_project_id_load_requirements(self):
-        self.action_refresh_requirements()
 
     def action_refresh_requirements(self):
         for rec in self:
@@ -142,8 +139,8 @@ class ProjectMaterialConsumption(models.Model):
             
             tasks = self.env['project.task'].search(tasks_domain)
             
-            # 2. ADDITIONAL PURCHASE SOURCE (Material Only)
-            ap_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'material')]
+            # 2. ADDITIONAL PURCHASE SOURCE (Material Only, Manual Only)
+            ap_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'material'), ('source', '=', 'manual')]
             if sf_product:
                 ap_domain.append(('product_id', '=', sf_product.id))
             if sf_task:
@@ -534,9 +531,5 @@ class ProjectMaterialConsumptionSummary(models.Model):
     @api.depends('total_weight_kg', 'product_id.weight', 'total_qty_unit')
     def _compute_qty_to_issue(self):
         for rec in self:
-            weight = rec.product_id.weight or 0.0
-            if weight > 0:
-                rec.qty_to_issue_unit = math.ceil(rec.total_weight_kg / weight)
-            else:
-                # Use total_qty_unit directly if weight is 0
-                rec.qty_to_issue_unit = math.ceil(rec.total_qty_unit)
+            # We trust the aggregated total_qty_unit as it is already math.ceil per line
+            rec.qty_to_issue_unit = rec.total_qty_unit
