@@ -169,7 +169,7 @@ class ProjectMaterialConsumption(models.Model):
             # Create move directly
             self.env['stock.move'].create({
                 'picking_id': picking.id,
-                'name': summary.product_id.name,
+                'description_picking': summary.product_id.name,
                 'product_id': summary.product_id.id,
                 'product_uom_qty': summary.qty_to_issue_unit,
                 'product_uom': summary.product_id.uom_id.id,
