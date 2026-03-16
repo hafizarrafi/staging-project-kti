@@ -29,12 +29,7 @@
                         </h1>
                     </div>
                     <group>
-                        <group string="Cari &amp; Filter">
-                            <field name="search_product_id" options="{'no_create': True}"/>
-                            <field name="search_task_id" options="{'no_create': True}" domain="[('project_id','=',project_id)]"/>
-                            <button name="action_refresh_requirements" string="Terapkan Filter" type="object" class="btn-secondary"/>
-                        </group>
-                        <group string="Informasi Unit">
+                        <group string="Informasi Project">
                             <field name="date"/>
                             <field name="display_stock_location" readonly="1"/>
                         </group>
@@ -50,6 +45,17 @@
                             </field>
                         </page>
                         <page string="Consumption" name="lines">
+                            <!-- SEARCH & FILTER SECTION -->
+                            <group>
+                                <group string="Pencarian &amp; Filter">
+                                    <field name="search_product_id" options="{'no_create': True}" placeholder="Pilih Produk..."/>
+                                    <field name="search_task_id" options="{'no_create': True}" domain="[('project_id','=',project_id)]" placeholder="Pilih Task..."/>
+                                </group>
+                                <group>
+                                    <button name="action_refresh_requirements" string="Terapkan Filter &amp; Refresh Data" type="object" class="btn-primary" icon="fa-search"/>
+                                </group>
+                            </group>
+
                             <!-- TOP TABLE: AGGREGATED SUMMARY -->
                             <separator string="1. Item yang Akan Diterbitkan (Agregat)"/>
                             <field name="summary_ids" readonly="1">

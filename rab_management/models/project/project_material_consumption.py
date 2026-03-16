@@ -108,13 +108,19 @@ class ProjectMaterialConsumption(models.Model):
             ap_domain = [('project_id', '=', rec.project_id.id)]
             if sf_product:
                 ap_domain.append(('product_id', '=', sf_product.id))
+            if sf_task:
+                # Only show purchases linked to this task or its subtasks
+                ap_domain.append(('task_id', 'child_of', sf_task.id))
             additional_purchases = self.env['project.additional.purchase'].search(ap_domain)
             
             # 3. EQUIPMENT MASTER SOURCE
-            eq_domain = [('project_id', '=', rec.project_id.id)]
-            if sf_product:
-                eq_domain.append(('product_id', '=', sf_product.id))
-            equipment_masters = self.env['project.equipment.master'].search(eq_domain)
+            equipment_masters = []
+            if not sf_task:
+                # Only show global equipment when no specific task filter is active
+                eq_domain = [('project_id', '=', rec.project_id.id)]
+                if sf_product:
+                    eq_domain.append(('product_id', '=', sf_product.id))
+                equipment_masters = self.env['project.equipment.master'].search(eq_domain)
 
             # Map existing lines for preservation
             existing_lines = {}
@@ -416,13 +422,11 @@ class ProjectMaterialConsumptionLine(models.Model):
             key = (rec.task_id.id, rec.product_id.id, rec.additional_purchase_id.id, rec.equipment_master_id.id)
             rec.qty_issued_unit = amounts.get(key, 0.0)
 
-    @api.depends('qty_issued_unit', 'qty_required_kg', 'product_id.weight')
+    @api.depends('qty_issued_unit')
     def _compute_issue_status(self):
-        # Explicit separate method for stored status
+        # Simply check if ANY quantity has been issued in a document
         for rec in self:
-            weight = rec.product_id.weight or 0.0
-            total_req_units = math.ceil(rec.qty_required_kg / weight) if weight > 0 else 0
-            rec.is_fully_issued = rec.qty_issued_unit >= total_req_units
+            rec.is_fully_issued = rec.qty_issued_unit > 0.0
 
     @api.depends('qty_required_kg', 'product_id.weight', 'qty_required_unit')
     def _compute_qty_to_issue(self):
