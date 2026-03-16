@@ -46,7 +46,7 @@
                                     <field name="product_id"/>
                                     <field name="qty_issue_unit" string="Quantity (unit)"/>
                                     <field name="qty_issued_weight" string="Weight Issued (kg)"/>
-                                    <field name="qty_required_kg" string="Original Req (kg)"/>
+                                    <!-- <field name="qty_required_kg" string="Original Req (kg)"/> -->
                                 </list>
                             </field>
                         </page>
