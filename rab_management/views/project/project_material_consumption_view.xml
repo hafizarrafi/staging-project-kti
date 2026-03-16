@@ -151,7 +151,8 @@
                                     <field name="qty_required_kg" readonly="1" string="Butuh (kg)"
                                            column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
                                     
-                                    <field name="qty_required_unit" readonly="1" string="Butuh (unit)"/>
+                                    <field name="qty_required_unit" readonly="1" string="Butuh (unit)"
+                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
                                     <field name="qty_issued_unit" readonly="1" string="Terbit"
                                            column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
                                     <field name="qty_remaining_unit" readonly="1" string="Sisa" class="font-weight-bold"

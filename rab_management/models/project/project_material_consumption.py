@@ -253,7 +253,7 @@ class ProjectMaterialConsumption(models.Model):
                         'task_id': task.id,
                         'product_id': task.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': units,
+                        'qty_required_unit': total_kg, # Standardize to KG for tracking
                         'source_type': source_type,
                     }, key)
                 
@@ -268,7 +268,7 @@ class ProjectMaterialConsumption(models.Model):
                         'task_id': task.id,
                         'product_id': mat.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': units,
+                        'qty_required_unit': total_kg, # Standardize to KG for tracking
                         'source_type': source_type,
                     }, key)
 
@@ -377,43 +377,52 @@ class ProjectMaterialConsumption(models.Model):
                 'company_id': self.project_id.company_id.id,
             })
 
-            # Distribute the DO quantity (summary.qty_to_issue_unit) among individual lines
-            # logic: issue up to the remaining balance of each line
+            # 3b. Logic for Task sources (Satisfy all selected weights)
+            is_task_source = self.search_source_type in ['task_primary', 'task_additional']
             product_lines = selected_lines.filtered(lambda l: l.product_id == summary.product_id)
-            remaining_to_distribute = summary.qty_to_issue_unit
             
-            for line in product_lines:
-                if remaining_to_distribute <= 0:
-                    break
-                
-                # Use remaining unit as the ceiling for distribution
-                line_remaining = line.qty_remaining_unit
-                if line_remaining <= 0:
-                    continue
+            if is_task_source:
+                # For tasks, we just mark all selected lines as fully issued in weight terms
+                for line in product_lines:
+                    self.env['project.material.issue.line'].create({
+                        'issue_id': issue_log.id,
+                        'product_id': line.product_id.id,
+                        'task_id': line.task_id.id,
+                        'qty_required_kg': line.qty_required_kg,
+                        'qty_issue_unit': line.qty_required_kg, # Issued the full weight
+                    })
+            else:
+                # Distribute the DO quantity (summary.qty_to_issue_unit) among individual lines (Pcs)
+                remaining_to_distribute = summary.qty_to_issue_unit
+                for line in product_lines:
+                    if remaining_to_distribute <= 0:
+                        break
                     
-                issue_qty = min(line_remaining, remaining_to_distribute)
+                    line_remaining = line.qty_remaining_unit
+                    if line_remaining <= 0:
+                        continue
+                        
+                    issue_qty = min(line_remaining, remaining_to_distribute)
+                    
+                    self.env['project.material.issue.line'].create({
+                        'issue_id': issue_log.id,
+                        'product_id': line.product_id.id,
+                        'task_id': line.task_id.id,
+                        'additional_purchase_id': line.additional_purchase_id.id,
+                        'equipment_master_id': line.equipment_master_id.id,
+                        'qty_required_kg': line.qty_required_kg,
+                        'qty_issue_unit': issue_qty,
+                    })
+                    remaining_to_distribute -= issue_qty
                 
-                self.env['project.material.issue.line'].create({
-                    'issue_id': issue_log.id,
-                    'product_id': line.product_id.id,
-                    'task_id': line.task_id.id,
-                    'additional_purchase_id': line.additional_purchase_id.id,
-                    'equipment_master_id': line.equipment_master_id.id,
-                    'qty_required_kg': line.qty_required_kg,
-                    'qty_issue_unit': issue_qty,
-                })
-                remaining_to_distribute -= issue_qty
-            
-            # Edge case: If there is extra quantity, attribute it to the last line
-            if remaining_to_distribute > 0 and product_lines:
-                last_line = product_lines[-1]
-                # Update the last created log line for this product/summary
-                log_line = self.env['project.material.issue.line'].search([
-                    ('issue_id', '=', issue_log.id),
-                    ('product_id', '=', summary.product_id.id)
-                ], limit=1, order='id desc')
-                if log_line:
-                    log_line.qty_issue_unit += remaining_to_distribute
+                # Edge case: If there is extra quantity, attribute it to the last line
+                if remaining_to_distribute > 0 and product_lines:
+                    log_line = self.env['project.material.issue.line'].search([
+                        ('issue_id', '=', issue_log.id),
+                        ('product_id', '=', summary.product_id.id)
+                    ], limit=1, order='id desc')
+                    if log_line:
+                        log_line.qty_issue_unit += remaining_to_distribute
 
             # Record aggregated issue details in log as well? 
             # For now, let's just mark the lines as processed if needed
