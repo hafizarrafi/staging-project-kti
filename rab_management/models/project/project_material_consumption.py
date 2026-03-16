@@ -335,6 +335,7 @@ class ProjectMaterialConsumption(models.Model):
         issue_log.picking_id = picking.id
 
         # 3. Create Moves & Log Lines
+        selected_lines = self.line_ids.filtered(lambda l: l.is_selected)
         for summary in selected_summaries:
             # Create move directly
             self.env['stock.move'].create({
@@ -349,22 +350,43 @@ class ProjectMaterialConsumption(models.Model):
                 'company_id': self.project_id.company_id.id,
             })
 
-        # Log individual requirements linked to this picking (optional but good for history)
-        # Log individual requirements linked to this picking
-        selected_lines = self.line_ids.filtered(lambda l: l.is_selected)
-        for line in selected_lines:
-            weight = line.product_id.weight or 0.0
-            est_units = math.ceil(line.qty_required_kg / weight) if weight > 0 else 0
+            # Distribute the DO quantity (summary.qty_to_issue_unit) among individual lines
+            # logic: issue up to the remaining balance of each line
+            product_lines = selected_lines.filtered(lambda l: l.product_id == summary.product_id)
+            remaining_to_distribute = summary.qty_to_issue_unit
             
-            self.env['project.material.issue.line'].create({
-                'issue_id': issue_log.id,
-                'product_id': line.product_id.id,
-                'task_id': line.task_id.id,
-                'additional_purchase_id': line.additional_purchase_id.id,
-                'equipment_master_id': line.equipment_master_id.id,
-                'qty_required_kg': line.qty_required_kg,
-                'qty_issue_unit': line.qty_to_issue_unit, # Using the calculated unit requirement
-            })
+            for line in product_lines:
+                if remaining_to_distribute <= 0:
+                    break
+                
+                # Use remaining unit as the ceiling for distribution
+                line_remaining = line.qty_remaining_unit
+                if line_remaining <= 0:
+                    continue
+                    
+                issue_qty = min(line_remaining, remaining_to_distribute)
+                
+                self.env['project.material.issue.line'].create({
+                    'issue_id': issue_log.id,
+                    'product_id': line.product_id.id,
+                    'task_id': line.task_id.id,
+                    'additional_purchase_id': line.additional_purchase_id.id,
+                    'equipment_master_id': line.equipment_master_id.id,
+                    'qty_required_kg': line.qty_required_kg,
+                    'qty_issue_unit': issue_qty,
+                })
+                remaining_to_distribute -= issue_qty
+            
+            # Edge case: If there is extra quantity, attribute it to the last line
+            if remaining_to_distribute > 0 and product_lines:
+                last_line = product_lines[-1]
+                # Update the last created log line for this product/summary
+                log_line = self.env['project.material.issue.line'].search([
+                    ('issue_id', '=', issue_log.id),
+                    ('product_id', '=', summary.product_id.id)
+                ], limit=1, order='id desc')
+                if log_line:
+                    log_line.qty_issue_unit += remaining_to_distribute
 
             # Record aggregated issue details in log as well? 
             # For now, let's just mark the lines as processed if needed
@@ -517,11 +539,12 @@ class ProjectMaterialConsumptionLine(models.Model):
         for rec in self:
             rec.qty_remaining_unit = max(0.0, rec.qty_required_unit - rec.qty_issued_unit)
 
-    @api.depends('qty_issued_unit', 'qty_required_unit')
+    @api.depends('qty_issued_unit', 'qty_required_unit', 'allow_partial_issue')
     def _compute_issue_status(self):
         for rec in self:
             rec.is_fully_issued = rec.qty_issued_unit >= rec.qty_required_unit and rec.qty_required_unit > 0
-            rec.is_partially_issued = 0 < rec.qty_issued_unit < rec.qty_required_unit
+            # Strictly show partial ONLY if allow_partial_issue is True (Manual/Eq)
+            rec.is_partially_issued = rec.allow_partial_issue and 0 < rec.qty_issued_unit < rec.qty_required_unit
 
     @api.depends('source_type')
     def _compute_allow_partial(self):
