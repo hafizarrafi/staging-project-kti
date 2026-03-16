@@ -25,6 +25,8 @@ class ProjectMaterialConsumption(models.Model):
         related='project_id.stock_location_id',
         readonly=True
     )
+    search_product_id = fields.Many2one('product.product', string='Filter Produk')
+    search_task_id = fields.Many2one('project.task', string='Filter Pekerjaan')
     line_ids = fields.One2many(
         'project.material.consumption.line',
         'consumption_id',
@@ -52,22 +54,24 @@ class ProjectMaterialConsumption(models.Model):
         self.ensure_one()
         self.summary_ids.unlink()
         
-        selected_lines = self.line_ids.filtered(lambda l: l.is_selected and l.qty_required_kg > 0)
+        selected_lines = self.line_ids.filtered(lambda l: l.is_selected)
         if not selected_lines:
             return
             
         # Group by product_id
-        aggregation = {} # product_id -> total_weight
+        aggregation = {} # product_id -> (weight, units)
         for line in selected_lines:
             pid = line.product_id.id
-            aggregation[pid] = aggregation.get(pid, 0.0) + line.qty_required_kg
+            curr_weight, curr_units = aggregation.get(pid, (0.0, 0.0))
+            aggregation[pid] = (curr_weight + line.qty_required_kg, curr_units + line.qty_required_unit)
             
         summary_vals = []
-        for pid, weight in aggregation.items():
+        for pid, (weight, units) in aggregation.items():
             summary_vals.append((0, 0, {
                 'consumption_id': self.id,
                 'product_id': pid,
                 'total_weight_kg': weight,
+                'total_qty_unit': units,
             }))
         self.summary_ids = summary_vals
 
@@ -90,56 +94,100 @@ class ProjectMaterialConsumption(models.Model):
                 rec.line_ids = [(5, 0, 0)]
                 continue
 
-            # Get all tasks in this project. 
-            # We search recursively by checking if project_id is set or if it's a child of a task in the project.
-            tasks = self.env['project.task'].search([('project_id', '=', rec.project_id.id)])
+            # Load Search Filters
+            sf_product = rec.search_product_id
+            sf_task = rec.search_task_id
+
+            # 1. TASK SOURCES
+            tasks_domain = [('project_id', '=', rec.project_id.id)]
+            if sf_task:
+                tasks_domain.append(('id', 'child_of', sf_task.id))
+            tasks = self.env['project.task'].search(tasks_domain)
             
-            # Map existing lines
-            existing_lines = {(l.task_id.id, l.product_id.id, l.source_type): l for l in rec.line_ids}
+            # 2. ADDITIONAL PURCHASE SOURCE
+            ap_domain = [('project_id', '=', rec.project_id.id)]
+            if sf_product:
+                ap_domain.append(('product_id', '=', sf_product.id))
+            additional_purchases = self.env['project.additional.purchase'].search(ap_domain)
+            
+            # 3. EQUIPMENT MASTER SOURCE
+            eq_domain = [('project_id', '=', rec.project_id.id)]
+            if sf_product:
+                eq_domain.append(('product_id', '=', sf_product.id))
+            equipment_masters = self.env['project.equipment.master'].search(eq_domain)
+
+            # Map existing lines for preservation
+            existing_lines = {}
+            for l in rec.line_ids:
+                key = (l.task_id.id, l.product_id.id, l.source_type, l.additional_purchase_id.id, l.equipment_master_id.id)
+                existing_lines[key] = l
             
             line_vals = []
             seen_requirements = set()
-            
-            for task in tasks:
-                # 1. Direct product on the task itself
-                if task.product_id and task.weight > 0:
-                    # We use (task_id, product_id, 'direct') as uniqueness key
-                    key = (task.id, task.product_id.id, 'direct')
-                    seen_requirements.add(key)
-                    
-                    if key in existing_lines:
-                        line = existing_lines[key]
-                        if line.qty_required_kg != task.weight:
-                            line_vals.append((1, line.id, {'qty_required_kg': task.weight}))
-                    else:
-                        line_vals.append((0, 0, {
-                            'task_id': task.id,
-                            'product_id': task.product_id.id,
-                            'qty_required_kg': task.weight,
-                            'source_type': 'direct',
-                        }))
+
+            def process_requirement(vals, key):
+                # Filter by product if set
+                if sf_product and vals.get('product_id') != sf_product.id:
+                    return
                 
-                # 2. Individual manual requirements
-                for mat in task.material_needed_ids:
-                    # IMPORTANT: Skip 'subtask' source because that's an aggregate roll-up from children.
-                    # We only show 'manual' requirements here to maintain granularity.
-                    if mat.source != 'manual':
-                        continue
-                        
-                    key = (task.id, mat.product_id.id, 'manual')
-                    seen_requirements.add(key)
+                seen_requirements.add(key)
+                if key in existing_lines:
+                    line = existing_lines[key]
+                    update_vals = {}
+                    if line.qty_required_kg != vals.get('qty_required_kg', 0.0):
+                        update_vals['qty_required_kg'] = vals.get('qty_required_kg', 0.0)
+                    if line.qty_required_unit != vals.get('qty_required_unit', 0.0):
+                        update_vals['qty_required_unit'] = vals.get('qty_required_unit', 0.0)
                     
-                    if key in existing_lines:
-                        line = existing_lines[key]
-                        if line.qty_required_kg != mat.weight:
-                            line_vals.append((1, line.id, {'qty_required_kg': mat.weight}))
-                    else:
-                        line_vals.append((0, 0, {
-                            'task_id': task.id,
-                            'product_id': mat.product_id.id,
-                            'qty_required_kg': mat.weight or 0.0,
-                            'source_type': 'manual',
-                        }))
+                    if update_vals:
+                        line_vals.append((1, line.id, update_vals))
+                else:
+                    line_vals.append((0, 0, vals))
+
+            # PROCESS TASK REQUIREMENTS
+            for task in tasks:
+                # Direct product on task
+                if task.product_id:
+                    key = (task.id, task.product_id.id, 'direct', False, False)
+                    process_requirement({
+                        'task_id': task.id,
+                        'product_id': task.product_id.id,
+                        'qty_required_kg': task.weight,
+                        'source_type': 'direct',
+                    }, key)
+                
+                # Manual entries
+                for mat in task.material_needed_ids:
+                    if mat.source != 'manual': continue
+                    key = (task.id, mat.product_id.id, 'manual', False, False)
+                    process_requirement({
+                        'task_id': task.id,
+                        'product_id': mat.product_id.id,
+                        'qty_required_kg': mat.weight or 0.0,
+                        'source_type': 'manual',
+                    }, key)
+
+            # PROCESS ADDITIONAL PURCHASES
+            for ap in additional_purchases:
+                key = (False, ap.product_id.id, 'additional', ap.id, False)
+                process_requirement({
+                    'product_id': ap.product_id.id,
+                    'qty_required_kg': ap.total_weight or 0.0,
+                    'qty_required_unit': ap.total_qty or 0.0,
+                    'source_type': 'additional',
+                    'additional_purchase_id': ap.id,
+                }, key)
+
+            # PROCESS EQUIPMENT MASTER
+            for eq in equipment_masters:
+                key = (False, eq.product_id.id, 'equipment', False, eq.id)
+                process_requirement({
+                    'product_id': eq.product_id.id,
+                    'qty_required_kg': 0.0,
+                    'qty_required_unit': eq.total_qty or 0.0,
+                    'source_type': 'equipment',
+                    'equipment_master_id': eq.id,
+                }, key)
             
             # Remove stale lines
             for key, line in existing_lines.items():
@@ -222,8 +270,10 @@ class ProjectMaterialConsumption(models.Model):
                 'issue_id': issue_log.id,
                 'product_id': line.product_id.id,
                 'task_id': line.task_id.id,
+                'additional_purchase_id': line.additional_purchase_id.id,
+                'equipment_master_id': line.equipment_master_id.id,
                 'qty_required_kg': line.qty_required_kg,
-                'qty_issue_unit': est_units, # Immediately set it so the dashboard updates
+                'qty_issue_unit': line.qty_to_issue_unit, # Using the calculated unit requirement
             })
 
             # Record aggregated issue details in log as well? 
@@ -258,21 +308,37 @@ class ProjectMaterialConsumptionLine(models.Model):
     is_selected = fields.Boolean(string='Select')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task/Subtask')
-    source_type = fields.Selection([('direct', 'Direct'), ('manual', 'Manual')], default='direct')
+    additional_purchase_id = fields.Many2one('project.additional.purchase', string='Additonal Purchase Line')
+    equipment_master_id = fields.Many2one('project.equipment.master', string='Equipment Line')
+    
+    source_type = fields.Selection([
+        ('direct', 'Pekerjaan (Direct)'), 
+        ('manual', 'Pekerjaan (Manual)'),
+        ('additional', 'Additional Purchase'),
+        ('equipment', 'Equipment Master')
+    ], string='Sumber', default='direct')
+    
     parent_task_display_id = fields.Many2one('project.task', string='Task Utama', compute='_compute_task_display', store=True)
-    subtask_display_name = fields.Char(string='Subtask', compute='_compute_task_display', store=True)
+    subtask_display_name = fields.Char(string='Subtask/Detail', compute='_compute_task_display', store=True)
 
     qty_available = fields.Float(string='Stok site', compute='_compute_qty_available')
     qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
+    qty_required_unit = fields.Float(string='Dibutuhkan (unit)', digits=(16, 2))
     
     qty_issued_unit = fields.Float(string='Issued (unit)', compute='_compute_qty_issued')
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue')
     is_fully_issued = fields.Boolean(string='Status', compute='_compute_issue_status', store=False)
 
-    @api.depends('task_id', 'task_id.parent_id', 'task_id.name')
+    @api.depends('task_id', 'task_id.parent_id', 'task_id.name', 'source_type', 'additional_purchase_id', 'equipment_master_id')
     def _compute_task_display(self):
         for rec in self:
-            if rec.task_id:
+            if rec.source_type == 'additional' and rec.additional_purchase_id:
+                rec.parent_task_display_id = False
+                rec.subtask_display_name = _("Purchase: %s") % rec.additional_purchase_id.source_details
+            elif rec.source_type == 'equipment' and rec.equipment_master_id:
+                rec.parent_task_display_id = False
+                rec.subtask_display_name = _("Equipment: %s") % (rec.equipment_master_id.job_type or '')
+            elif rec.task_id:
                 # Find the root task (top level)
                 parent = rec.task_id
                 while parent.parent_id:
@@ -317,23 +383,38 @@ class ProjectMaterialConsumptionLine(models.Model):
         if not self:
             return
             
-        task_ids = self.mapped('task_id').ids
         product_ids = self.mapped('product_id').ids
+        task_ids = self.mapped('task_id').ids
+        ap_ids = self.mapped('additional_purchase_id').ids
+        eq_ids = self.mapped('equipment_master_id').ids
         
         groups = self.env['project.material.issue.line'].read_group(
-            [('task_id', 'in', task_ids), ('product_id', 'in', product_ids), ('issue_id.state', '!=', 'cancel')],
-            ['qty_issue_unit:sum', 'task_id', 'product_id'],
-            ['task_id', 'product_id'],
+            [
+                ('product_id', 'in', product_ids),
+                ('issue_id.state', '!=', 'cancel'),
+                '|', '|',
+                    ('task_id', 'in', task_ids),
+                    ('additional_purchase_id', 'in', ap_ids),
+                    ('equipment_master_id', 'in', eq_ids)
+            ],
+            ['qty_issue_unit:sum', 'task_id', 'product_id', 'additional_purchase_id', 'equipment_master_id'],
+            ['task_id', 'product_id', 'additional_purchase_id', 'equipment_master_id'],
             lazy=False
         )
         
-        amounts = {} # (task_id, product_id) -> sum
+        amounts = {} 
         for res in groups:
-            key = (res['task_id'][0] if res['task_id'] else False, res['product_id'][0])
+            key = (
+                res['task_id'][0] if res['task_id'] else False, 
+                res['product_id'][0],
+                res['additional_purchase_id'][0] if res['additional_purchase_id'] else False,
+                res['equipment_master_id'][0] if res['equipment_master_id'] else False
+            )
             amounts[key] = res['qty_issue_unit']
             
         for rec in self:
-            rec.qty_issued_unit = amounts.get((rec.task_id.id, rec.product_id.id), 0.0)
+            key = (rec.task_id.id, rec.product_id.id, rec.additional_purchase_id.id, rec.equipment_master_id.id)
+            rec.qty_issued_unit = amounts.get(key, 0.0)
 
     @api.depends('qty_issued_unit', 'qty_required_kg', 'product_id.weight')
     def _compute_issue_status(self):
@@ -343,7 +424,7 @@ class ProjectMaterialConsumptionLine(models.Model):
             total_req_units = math.ceil(rec.qty_required_kg / weight) if weight > 0 else 0
             rec.is_fully_issued = rec.qty_issued_unit >= total_req_units
 
-    @api.depends('qty_required_kg', 'product_id.weight')
+    @api.depends('qty_required_kg', 'product_id.weight', 'qty_required_unit')
     def _compute_qty_to_issue(self):
         for rec in self:
             # This is now informational only in the requirements table
@@ -351,7 +432,7 @@ class ProjectMaterialConsumptionLine(models.Model):
             if weight > 0:
                 rec.qty_to_issue_unit = rec.qty_required_kg / weight
             else:
-                rec.qty_to_issue_unit = 0
+                rec.qty_to_issue_unit = rec.qty_required_unit
 
 class ProjectMaterialConsumptionSummary(models.Model):
     _name = 'project.material.consumption.summary'
@@ -360,14 +441,15 @@ class ProjectMaterialConsumptionSummary(models.Model):
     consumption_id = fields.Many2one('project.material.consumption', ondelete='cascade')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     total_weight_kg = fields.Float(string='Total Required (kg)', digits=(16, 2))
+    total_qty_unit = fields.Float(string='Total Required (unit)', digits=(16, 2))
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue', store=True)
 
-    @api.depends('total_weight_kg', 'product_id.weight')
+    @api.depends('total_weight_kg', 'product_id.weight', 'total_qty_unit')
     def _compute_qty_to_issue(self):
         for rec in self:
             weight = rec.product_id.weight or 0.0
             if weight > 0:
-                # APPLY ROUNDING ONLY HERE
                 rec.qty_to_issue_unit = math.ceil(rec.total_weight_kg / weight)
             else:
-                rec.qty_to_issue_unit = 0
+                # Use total_qty_unit directly if weight is 0
+                rec.qty_to_issue_unit = math.ceil(rec.total_qty_unit)

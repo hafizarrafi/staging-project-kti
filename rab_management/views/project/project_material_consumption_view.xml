@@ -29,10 +29,13 @@
                         </h1>
                     </div>
                     <group>
-                        <group>
-                            <field name="date"/>
+                        <group string="Cari &amp; Filter">
+                            <field name="search_product_id" options="{'no_create': True}"/>
+                            <field name="search_task_id" options="{'no_create': True}" domain="[('project_id','=',project_id)]"/>
+                            <button name="action_refresh_requirements" string="Terapkan Filter" type="object" class="btn-secondary"/>
                         </group>
-                        <group>
+                        <group string="Informasi Unit">
+                            <field name="date"/>
                             <field name="display_stock_location" readonly="1"/>
                         </group>
                     </group>
@@ -53,7 +56,8 @@
                                 <list string="Aggregated DO List">
                                     <field name="product_id"/>
                                     <field name="total_weight_kg" string="Total Berat (kg)"/>
-                                    <field name="qty_to_issue_unit" string="Issue Units (rounded)" class="font-weight-bold"/>
+                                    <field name="total_qty_unit" string="Total Unit"/>
+                                    <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold"/>
                                 </list>
                             </field>
 
@@ -70,6 +74,7 @@
                                 <list editable="bottom" create="0" delete="0" decoration-muted="is_fully_issued">
                                     <field name="is_fully_issued" column_invisible="True"/>
                                     <field name="is_selected" string="Select" readonly="is_fully_issued"/>
+                                    <field name="source_type" readonly="1" string="Sumber"/>
                                     <field name="parent_task_display_id" readonly="1" string="Pekerjaan Utama"/>
                                     <field name="subtask_display_name" readonly="1" string="Sub-pekerjaan"/>
                                     <field name="product_id" readonly="1"/>

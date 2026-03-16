@@ -59,6 +59,8 @@ class ProjectMaterialIssueLine(models.Model):
     issue_id = fields.Many2one('project.material.issue', string='Issue Log', ondelete='cascade')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task')
+    additional_purchase_id = fields.Many2one('project.additional.purchase', string='Additional Purchase')
+    equipment_master_id = fields.Many2one('project.equipment.master', string='Equipment Master')
 
     qty_required_kg = fields.Float(string='Orig. Req (kg)', digits=(16, 2))
     qty_issue_unit = fields.Float(string='Issued (unit)')
