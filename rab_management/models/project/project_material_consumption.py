@@ -34,6 +34,13 @@ class ProjectMaterialConsumption(models.Model):
         ('equipment_primary', 'Equipment'),
         ('equipment_additional', 'Equipment Additional')
     ], string='Filter Sumber', default='task_primary')
+    
+    @api.onchange('search_source_type')
+    def _onchange_search_source_type(self):
+        # Only task types need the task filter
+        if self.search_source_type not in ['task_primary', 'task_additional']:
+            self.search_task_id = False
+        return self.action_refresh_requirements()
 
     def action_filter_task_primary(self):
         self.search_source_type = 'task_primary'
@@ -54,6 +61,16 @@ class ProjectMaterialConsumption(models.Model):
     def action_filter_equipment_additional(self):
         self.search_source_type = 'equipment_additional'
         return self.action_refresh_requirements()
+
+    def action_view_project(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'project.project',
+            'res_id': self.project_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
     line_ids = fields.One2many(
         'project.material.consumption.line',
         'consumption_id',

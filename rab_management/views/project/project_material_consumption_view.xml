@@ -18,8 +18,7 @@
         <field name="arch" type="xml">
             <form string="Stock Management">
                 <header>
-                    <button name="action_generate_picking" string="Generate Selected DO" type="object" class="btn-primary" 
-                            confirm="Are you sure you want to generate Delivery Orders for selected items?"/>
+                    <button name="action_view_project" string="Back to Project" type="object" class="btn-secondary" icon="fa-arrow-left"/>
                     <button name="action_refresh_requirements" string="Refresh Requirements" type="object" class="btn-secondary"/>
                 </header>
                 <sheet>
@@ -48,9 +47,9 @@
                             <!-- 1. ACTION BUTTONS (TOP) -->
                             <div class="o_row pt-3 pb-3 d-flex align-items-center gap-2">
                                 <button name="action_calculate_summary" string="Kalkulasi Pilihan (Agregat)" type="object" 
-                                        class="btn-primary" style="height: 40px; min-width: 200px;"/>
+                                        class="btn-primary" style="min-width: 200px;"/>
                                 <button name="action_generate_picking" string="Generate Delivery Order (DO)" type="object" 
-                                        class="btn-success" style="height: 40px; min-width: 200px;"
+                                        class="btn-success" style="min-width: 200px;"
                                         confirm="Konfirmasi pembuatan DO untuk item di atas?"/>
                             </div>
 
@@ -71,44 +70,43 @@
                             <separator string="2. Pilih Sumber Kebutuhan"/>
                             <field name="search_source_type" invisible="True"/>
                             <div class="d-flex flex-wrap gap-2 mb-3 mt-2">
-                                <!-- PEKERJAAN UTAMA -->
                                 <button name="action_filter_task_primary" string="Pekerjaan Utama" type="object" 
-                                        class="btn-primary" style="height: 35px;"
+                                        class="btn-primary"
                                         invisible="search_source_type != 'task_primary'"/>
                                 <button name="action_filter_task_primary" string="Pekerjaan Utama" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"
+                                        class="btn-outline-primary"
                                         invisible="search_source_type == 'task_primary'"/>
 
                                 <!-- PEKERJAAN ADDITIONAL -->
                                 <button name="action_filter_task_additional" string="Pekerjaan Additional" type="object" 
-                                        class="btn-primary" style="height: 35px;"
+                                        class="btn-primary"
                                         invisible="search_source_type != 'task_additional'"/>
                                 <button name="action_filter_task_additional" string="Pekerjaan Additional" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"
+                                        class="btn-outline-primary"
                                         invisible="search_source_type == 'task_additional'"/>
 
                                 <!-- ADDITIONAL MATERIAL -->
                                 <button name="action_filter_additional_material" string="Additional Material" type="object" 
-                                        class="btn-primary" style="height: 35px;"
+                                        class="btn-primary"
                                         invisible="search_source_type != 'additional'"/>
                                 <button name="action_filter_additional_material" string="Additional Material" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"
+                                        class="btn-outline-primary"
                                         invisible="search_source_type == 'additional'"/>
 
                                 <!-- EQUIPMENT -->
                                 <button name="action_filter_equipment_primary" string="Equipment" type="object" 
-                                        class="btn-primary" style="height: 35px;"
+                                        class="btn-primary"
                                         invisible="search_source_type != 'equipment_primary'"/>
                                 <button name="action_filter_equipment_primary" string="Equipment" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"
+                                        class="btn-outline-primary"
                                         invisible="search_source_type == 'equipment_primary'"/>
 
                                 <!-- EQUIPMENT ADDITIONAL -->
                                 <button name="action_filter_equipment_additional" string="Equipment Additional" type="object" 
-                                        class="btn-primary" style="height: 35px;"
+                                        class="btn-primary"
                                         invisible="search_source_type != 'equipment_additional'"/>
                                 <button name="action_filter_equipment_additional" string="Equipment Additional" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"
+                                        class="btn-outline-primary"
                                         invisible="search_source_type == 'equipment_additional'"/>
                             </div>
 
@@ -121,7 +119,7 @@
                                 </group>
                                 <group>
                                     <button name="action_refresh_requirements" string="Refresh Data" type="object" 
-                                            class="btn-primary" icon="fa-refresh" style="height: 35px;"/>
+                                            class="btn-primary" icon="fa-refresh"/>
                                 </group>
                             </group>
 
