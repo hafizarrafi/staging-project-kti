@@ -538,6 +538,9 @@ class ProjectMaterialConsumptionSummary(models.Model):
     _name = 'project.material.consumption.summary'
     _description = 'Material Consumption Aggregated Summary'
 
+    consumption_id = fields.Many2one('project.material.consumption', ondelete='cascade')
+    product_id = fields.Many2one('product.product', string='Product', required=True)
+    total_weight_kg = fields.Float(string='Total Required (kg)', digits=(16, 2))
     total_qty_unit = fields.Float(string='Total Required (unit)', digits=(16, 2))
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', digits=(16, 2))
     is_readonly = fields.Boolean(compute='_compute_is_readonly')
