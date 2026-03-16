@@ -401,12 +401,16 @@ class ProjectMaterialConsumption(models.Model):
             if is_task_source:
                 # For tasks, we just mark all selected lines as fully issued in weight terms
                 for line in product_lines:
+                    prod_weight = line.product_id.weight or 0.0
+                    decimal_units = (line.qty_required_kg / prod_weight) if prod_weight > 0 else 1.0 # default to 1 if no weight? but user said 10kg/30kg = 0.3
+                    
                     self.env['project.material.issue.line'].create({
                         'issue_id': issue_log.id,
                         'product_id': line.product_id.id,
                         'task_id': line.task_id.id,
                         'qty_required_kg': line.qty_required_kg,
-                        'qty_issue_unit': line.qty_required_kg, # Issued the full weight
+                        'qty_issue_unit': decimal_units, # Log fractional pieces (0.3)
+                        'qty_issued_weight': line.qty_required_kg, # Dashboard uses this for aggregation
                     })
             else:
                 # Distribute the DO quantity (summary.qty_to_issue_unit) among individual lines (Pcs)
@@ -429,6 +433,7 @@ class ProjectMaterialConsumption(models.Model):
                         'equipment_master_id': line.equipment_master_id.id,
                         'qty_required_kg': line.qty_required_kg,
                         'qty_issue_unit': issue_qty,
+                        'qty_issued_weight': issue_qty * (line.product_id.weight or 0.0),
                     })
                     remaining_to_distribute -= issue_qty
                 
@@ -568,12 +573,13 @@ class ProjectMaterialConsumptionLine(models.Model):
                     ('additional_purchase_id', 'in', ap_ids),
                     ('equipment_master_id', 'in', eq_ids)
             ],
-            ['qty_issue_unit:sum', 'task_id', 'product_id', 'additional_purchase_id', 'equipment_master_id'],
+            ['qty_issue_unit:sum', 'qty_issued_weight:sum', 'task_id', 'product_id', 'additional_purchase_id', 'equipment_master_id'],
             ['task_id', 'product_id', 'additional_purchase_id', 'equipment_master_id'],
             lazy=False
         )
         
-        amounts = {} 
+        amounts_unit = {} 
+        amounts_weight = {}
         for res in groups:
             key = (
                 res['task_id'][0] if res['task_id'] else False, 
@@ -581,11 +587,17 @@ class ProjectMaterialConsumptionLine(models.Model):
                 res['additional_purchase_id'][0] if res['additional_purchase_id'] else False,
                 res['equipment_master_id'][0] if res['equipment_master_id'] else False
             )
-            amounts[key] = res['qty_issue_unit']
+            amounts_unit[key] = res['qty_issue_unit']
+            amounts_weight[key] = res['qty_issued_weight']
             
         for rec in self:
             key = (rec.task_id.id, rec.product_id.id, rec.additional_purchase_id.id, rec.equipment_master_id.id)
-            rec.qty_issued_unit = amounts.get(key, 0.0)
+            if rec.source_type in ['task_primary', 'task_additional']:
+                # Task sources are measured in KG on the dashboard
+                rec.qty_issued_unit = amounts_weight.get(key, 0.0)
+            else:
+                # Manual/Equipment sources are measured in Units
+                rec.qty_issued_unit = amounts_unit.get(key, 0.0)
 
     @api.depends('qty_issued_unit', 'qty_required_unit')
     def _compute_qty_remaining(self):

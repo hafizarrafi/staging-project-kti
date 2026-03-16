@@ -63,4 +63,5 @@ class ProjectMaterialIssueLine(models.Model):
     equipment_master_id = fields.Many2one('project.equipment.master', string='Equipment Master')
 
     qty_required_kg = fields.Float(string='Orig. Req (kg)', digits=(16, 2))
-    qty_issue_unit = fields.Float(string='Issued (unit)')
+    qty_issue_unit = fields.Float(string='Issued (unit)', digits='Product Unit of Measure')
+    qty_issued_weight = fields.Float(string='Weight Issued (kg)', digits=(16, 2))
