@@ -43,15 +43,33 @@
                             </field>
                         </page>
                         <page string="Consumption" name="lines">
+                            <!-- TOP TABLE: AGGREGATED SUMMARY -->
+                            <separator string="1. Item yang Akan Diterbitkan (Agregat)"/>
+                            <field name="summary_ids" readonly="1">
+                                <list string="Aggregated DO List">
+                                    <field name="product_id"/>
+                                    <field name="total_weight_kg" string="Total Berat (kg)"/>
+                                    <field name="qty_to_issue_unit" string="Akan Terbit (unit)" class="font-weight-bold"/>
+                                </list>
+                            </field>
+
+                            <!-- ACTION BUTTONS -->
+                            <div class="o_row pt-3 pb-3">
+                                <button name="action_calculate_summary" string="Kalkulasi Pilihan (Agregat)" type="object" class="btn-primary me-2"/>
+                                <button name="action_generate_picking" string="Generate Delivery Order (DO)" type="object" class="btn-success" 
+                                        confirm="Konfirmasi pembuatan DO untuk item di atas?"/>
+                            </div>
+
+                            <!-- BOTTOM TABLE: INDIVIDUAL REQUIREMENTS -->
+                            <separator string="2. Daftar Kebutuhan (Pilih untuk Agregasi)"/>
                             <field name="line_ids">
                                 <list editable="bottom" create="0" delete="0">
                                     <field name="is_selected" string="Select"/>
-                                    <field name="task_id" readonly="1"/>
+                                    <field name="parent_task_id" readonly="1" string="Task Utama"/>
+                                    <field name="task_id" readonly="1" string="Subtask"/>
                                     <field name="product_id" readonly="1"/>
-                                    <field name="qty_available" readonly="1" string="Stok (uom)"/>
-                                    <field name="qty_required_kg" readonly="1" string="Dibutuhkan (kg)"/>
-                                    <field name="qty_issued_unit" readonly="1" string="Sudah Terbit (unit)"/>
-                                    <field name="qty_to_issue_unit" string="Akan Terbit (unit)" class="font-weight-bold"/>
+                                    <field name="qty_available" readonly="1" string="Stok site"/>
+                                    <field name="qty_required_kg" readonly="1" string="Butuh (kg)"/>
                                 </list>
                             </field>
                         </page>
