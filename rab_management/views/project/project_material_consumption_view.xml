@@ -74,7 +74,7 @@
 
     <record id="action_project_material_consumption" model="ir.actions.act_window">
         <field name="name">Stock Management</field>
-        <field name="res_model": "project.material.consumption</field>
+        <field name="res_model">project.material.consumption</field>
         <field name="view_mode">list,form</field>
     </record>
 
