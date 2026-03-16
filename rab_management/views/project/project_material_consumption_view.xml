@@ -69,16 +69,45 @@
                             <separator string="2. Pilih Sumber Kebutuhan"/>
                             <field name="search_source_type" invisible="True"/>
                             <div class="d-flex flex-wrap gap-2 mb-3 mt-2">
+                                <!-- PEKERJAAN UTAMA -->
                                 <button name="action_filter_task_primary" string="Pekerjaan Utama" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"/>
+                                        class="btn-primary" style="height: 35px;"
+                                        invisible="search_source_type != 'task_primary'"/>
+                                <button name="action_filter_task_primary" string="Pekerjaan Utama" type="object" 
+                                        class="btn-outline-primary" style="height: 35px;"
+                                        invisible="search_source_type == 'task_primary'"/>
+
+                                <!-- PEKERJAAN ADDITIONAL -->
                                 <button name="action_filter_task_additional" string="Pekerjaan Additional" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"/>
+                                        class="btn-primary" style="height: 35px;"
+                                        invisible="search_source_type != 'task_additional'"/>
+                                <button name="action_filter_task_additional" string="Pekerjaan Additional" type="object" 
+                                        class="btn-outline-primary" style="height: 35px;"
+                                        invisible="search_source_type == 'task_additional'"/>
+
+                                <!-- ADDITIONAL MATERIAL -->
                                 <button name="action_filter_additional_material" string="Additional Material" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"/>
+                                        class="btn-primary" style="height: 35px;"
+                                        invisible="search_source_type != 'additional'"/>
+                                <button name="action_filter_additional_material" string="Additional Material" type="object" 
+                                        class="btn-outline-primary" style="height: 35px;"
+                                        invisible="search_source_type == 'additional'"/>
+
+                                <!-- EQUIPMENT -->
                                 <button name="action_filter_equipment_primary" string="Equipment" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"/>
+                                        class="btn-primary" style="height: 35px;"
+                                        invisible="search_source_type != 'equipment_primary'"/>
+                                <button name="action_filter_equipment_primary" string="Equipment" type="object" 
+                                        class="btn-outline-primary" style="height: 35px;"
+                                        invisible="search_source_type == 'equipment_primary'"/>
+
+                                <!-- EQUIPMENT ADDITIONAL -->
                                 <button name="action_filter_equipment_additional" string="Equipment Additional" type="object" 
-                                        class="btn-outline-primary" style="height: 35px;"/>
+                                        class="btn-primary" style="height: 35px;"
+                                        invisible="search_source_type != 'equipment_additional'"/>
+                                <button name="action_filter_equipment_additional" string="Equipment Additional" type="object" 
+                                        class="btn-outline-primary" style="height: 35px;"
+                                        invisible="search_source_type == 'equipment_additional'"/>
                             </div>
 
                             <!-- 4. SEARCH SECTION (BELOW BUTTONS) -->

@@ -76,6 +76,11 @@ class ProjectMaterialConsumption(models.Model):
         string='Issue Aggregation'
     )
 
+    @api.onchange('project_id')
+    def _onchange_project_id_refresh(self):
+        if self.project_id:
+            return self.action_refresh_requirements()
+
     def action_calculate_summary(self):
         """Aggregate selected requirements into summary table."""
         self.ensure_one()
@@ -137,8 +142,8 @@ class ProjectMaterialConsumption(models.Model):
             
             tasks = self.env['project.task'].search(tasks_domain)
             
-            # 2. ADDITIONAL PURCHASE SOURCE
-            ap_domain = [('project_id', '=', rec.project_id.id)]
+            # 2. ADDITIONAL PURCHASE SOURCE (Material Only)
+            ap_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'material')]
             if sf_product:
                 ap_domain.append(('product_id', '=', sf_product.id))
             if sf_task:
@@ -160,6 +165,16 @@ class ProjectMaterialConsumption(models.Model):
                 equipment_masters = self.env['project.equipment.master'].search(eq_domain)
             elif not rec.search_source_type: # Global refresh fallback
                 equipment_masters = self.env['project.equipment.master'].search(eq_domain)
+
+            # 4. ADDITIONAL EQUIPMENT SOURCE (Purchases with type equipment)
+            ap_equipment = []
+            if rec.search_source_type == 'equipment_additional' or not rec.search_source_type:
+                ap_eq_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'equipment')]
+                if sf_product:
+                    ap_eq_domain.append(('product_id', '=', sf_product.id))
+                if sf_task:
+                    ap_eq_domain.append(('task_id', 'child_of', sf_task.id))
+                ap_equipment = self.env['project.additional.purchase'].search(ap_eq_domain)
 
             # Map existing lines for preservation
             existing_lines = {}
@@ -200,10 +215,14 @@ class ProjectMaterialConsumption(models.Model):
                 # Direct product on task
                 if task.product_id:
                     key = (task.id, task.product_id.id, source_type, False, False)
+                    weight = task.product_id.weight or 0.0
+                    total_kg = task.weight
+                    units = math.ceil(total_kg / weight) if weight > 0 else 0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': task.product_id.id,
-                        'qty_required_kg': task.weight,
+                        'qty_required_kg': total_kg,
+                        'qty_required_unit': units,
                         'source_type': source_type,
                     }, key)
                 
@@ -211,14 +230,18 @@ class ProjectMaterialConsumption(models.Model):
                 for mat in task.material_needed_ids:
                     if mat.source != 'manual': continue
                     key = (task.id, mat.product_id.id, source_type, False, False)
+                    weight = mat.product_id.weight or 0.0
+                    total_kg = mat.weight or 0.0
+                    units = math.ceil(total_kg / weight) if weight > 0 else 0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': mat.product_id.id,
-                        'qty_required_kg': mat.weight or 0.0,
+                        'qty_required_kg': total_kg,
+                        'qty_required_unit': units,
                         'source_type': source_type,
                     }, key)
 
-            # PROCESS ADDITIONAL PURCHASES
+            # PROCESS ADDITIONAL PURCHASES (Material)
             for ap in additional_purchases:
                 key = (False, ap.product_id.id, 'additional', ap.id, False)
                 process_requirement({
@@ -239,6 +262,17 @@ class ProjectMaterialConsumption(models.Model):
                     'qty_required_unit': eq.total_qty or 0.0,
                     'source_type': source_type,
                     'equipment_master_id': eq.id,
+                }, key)
+
+            # PROCESS ADDITIONAL EQUIPMENT PURCHASE
+            for ap in ap_equipment:
+                key = (False, ap.product_id.id, 'equipment_additional', ap.id, False) # Maps to additional eq source
+                process_requirement({
+                    'product_id': ap.product_id.id,
+                    'qty_required_kg': ap.total_weight or 0.0,
+                    'qty_required_unit': ap.total_qty or 0.0,
+                    'source_type': 'equipment_additional',
+                    'additional_purchase_id': ap.id,
                 }, key)
             
             # Remove stale lines
