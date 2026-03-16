@@ -101,9 +101,10 @@ class ProjectMaterialConsumption(models.Model):
                     if key in existing_lines:
                         # Update existing line quantities if needed
                         line = existing_lines[key]
-                        line.write({
-                            'qty_required_kg': mat.weight or 0.0,
-                        })
+                        if line.qty_required_kg != (mat.weight or 0.0):
+                            line_vals.append((1, line.id, {
+                                'qty_required_kg': mat.weight or 0.0,
+                            }))
                     else:
                         # Create new line
                         line_vals.append((0, 0, {
@@ -130,18 +131,17 @@ class ProjectMaterialConsumption(models.Model):
 
         picking_type = self.env['stock.picking.type'].search([
             ('code', '=', 'outgoing'),
-            ('sequence_code', '=', 'OUT'),
             ('warehouse_id.company_id', '=', self.project_id.company_id.id),
         ], limit=1)
 
         if not picking_type:
-            # Fallback to any OUT picking type
+            # Fallback to any outgoing picking type
             picking_type = self.env['stock.picking.type'].search([
-                ('sequence_code', '=', 'OUT'),
+                ('code', '=', 'outgoing'),
             ], limit=1)
 
         if not picking_type:
-            raise UserError(_("No 'OUT' picking type found."))
+            raise UserError(_("No 'outgoing' picking type found."))
 
         # 1. Create a Log Record in project.material.issue
         issue_log = self.env['project.material.issue'].create({
@@ -223,43 +223,77 @@ class ProjectMaterialConsumptionLine(models.Model):
     is_selected = fields.Boolean(string='Select')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task/Subtask')
-    parent_task_display_id = fields.Many2one('project.task', string='Task Utama/Subtask', compute='_compute_task_display', store=True)
+    parent_task_display_id = fields.Many2one('project.task', string='Task Utama', compute='_compute_task_display', store=True)
+    subtask_display_name = fields.Char(string='Subtask', compute='_compute_task_display', store=True)
 
-    qty_available = fields.Float(string='Stok site', compute='_compute_qty_status')
+    qty_available = fields.Float(string='Stok site', compute='_compute_qty_available')
     qty_required_kg = fields.Float(string='Dibutuhkan (kg)', digits=(16, 2))
     
-    qty_issued_unit = fields.Float(string='Sudah Terbit (unit)', compute='_compute_qty_status')
+    qty_issued_unit = fields.Float(string='Issued (unit)', compute='_compute_qty_issued')
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', compute='_compute_qty_to_issue', store=True, readonly=False)
-    is_fully_issued = fields.Boolean(string='Fully Issued', compute='_compute_qty_status', store=True)
+    is_fully_issued = fields.Boolean(string='Status', compute='_compute_issue_status', store=True)
 
-    @api.depends('task_id')
+    @api.depends('task_id', 'task_id.parent_id', 'task_id.name')
     def _compute_task_display(self):
         for rec in self:
             if rec.task_id.parent_id:
                 rec.parent_task_display_id = rec.task_id.parent_id.id
+                rec.subtask_display_name = rec.task_id.name
             else:
                 rec.parent_task_display_id = rec.task_id.id
+                rec.subtask_display_name = False
 
-    @api.depends('product_id', 'consumption_id.project_id.stock_location_id', 'task_id')
-    def _compute_qty_status(self):
+    def _compute_qty_available(self):
+        # Batch Fetch Stock Quants for all lines
+        if not self:
+            return
+            
+        location_ids = self.mapped('consumption_id.project_id.stock_location_id').ids
+        product_ids = self.mapped('product_id').ids
+        
+        # Search quants once
+        quants = self.env['stock.quant'].search([
+            ('product_id', 'in', product_ids),
+            ('location_id', 'child_of', location_ids)
+        ])
+        
+        # Aggregate in memory
+        stock_map = {} # (location_id, product_id) -> qty
+        for q in quants:
+            key = (q.location_id.id, q.product_id.id)
+            stock_map[key] = stock_map.get(key, 0.0) + q.quantity
+            
         for rec in self:
-            # 1. Available Stock at site
-            rec.qty_available = 0.0
-            if rec.product_id and rec.consumption_id.project_id.stock_location_id:
-                quants = self.env['stock.quant'].search([
-                    ('product_id', '=', rec.product_id.id),
-                    ('location_id', '=', rec.consumption_id.project_id.stock_location_id.id)
-                ])
-                rec.qty_available = sum(quants.mapped('quantity'))
+            loc_id = rec.consumption_id.project_id.stock_location_id.id
+            rec.qty_available = stock_map.get((loc_id, rec.product_id.id), 0.0)
 
-            # 2. Total Issued so far (from logs)
-            rec.qty_issued_unit = sum(self.env['project.material.issue.line'].search([
-                ('task_id', '=', rec.task_id.id),
-                ('product_id', '=', rec.product_id.id),
-                ('issue_id.state', '!=', 'cancel')
-            ]).mapped('qty_issue_unit'))
+    def _compute_qty_issued(self):
+        # Batch Fetch Issued Quantities using read_group (N+1 Fix)
+        if not self:
+            return
+            
+        task_ids = self.mapped('task_id').ids
+        product_ids = self.mapped('product_id').ids
+        
+        groups = self.env['project.material.issue.line'].read_group(
+            [('task_id', 'in', task_ids), ('product_id', 'in', product_ids), ('issue_id.state', '!=', 'cancel')],
+            ['qty_issue_unit:sum', 'task_id', 'product_id'],
+            ['task_id', 'product_id'],
+            lazy=False
+        )
+        
+        amounts = {} # (task_id, product_id) -> sum
+        for res in groups:
+            key = (res['task_id'][0] if res['task_id'] else False, res['product_id'][0])
+            amounts[key] = res['qty_issue_unit']
+            
+        for rec in self:
+            rec.qty_issued_unit = amounts.get((rec.task_id.id, rec.product_id.id), 0.0)
 
-            # Check if fully issued
+    @api.depends('qty_issued_unit', 'qty_required_kg', 'product_id.weight')
+    def _compute_issue_status(self):
+        # Explicit separate method for stored status
+        for rec in self:
             weight = rec.product_id.weight or 0.0
             total_req_units = math.ceil(rec.qty_required_kg / weight) if weight > 0 else 0
             rec.is_fully_issued = rec.qty_issued_unit >= total_req_units

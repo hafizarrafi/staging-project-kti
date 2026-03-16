@@ -49,7 +49,7 @@
                                 <list string="Aggregated DO List">
                                     <field name="product_id"/>
                                     <field name="total_weight_kg" string="Total Berat (kg)"/>
-                                    <field name="qty_to_issue_unit" string="Akan Terbit (unit)" class="font-weight-bold"/>
+                                    <field name="qty_to_issue_unit" string="Issue Units (rounded)" class="font-weight-bold"/>
                                 </list>
                             </field>
 
@@ -67,11 +67,12 @@
                                     <field name="is_fully_issued" column_invisible="True"/>
                                     <field name="is_selected" string="Select" readonly="is_fully_issued"/>
                                     <field name="parent_task_display_id" readonly="1" string="Task Utama"/>
-                                    <field name="task_id" readonly="1" string="Subtask"/>
+                                    <field name="subtask_display_name" readonly="1" string="Subtask"/>
                                     <field name="product_id" readonly="1"/>
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                     <field name="qty_required_kg" readonly="1" string="Butuh (kg)"/>
-                                    <field name="qty_issued_unit" readonly="1" string="Terbit (unit)"/>
+                                    <field name="qty_to_issue_unit" readonly="1" string="Req. Unit (est.)"/>
+                                    <field name="qty_issued_unit" readonly="1" string="Issued Unit"/>
                                 </list>
                             </field>
                         </page>
