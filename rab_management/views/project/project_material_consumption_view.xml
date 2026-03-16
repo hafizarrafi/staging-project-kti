@@ -45,8 +45,8 @@
                         </page>
                         <page string="Consumption" name="lines">
                             <!-- 1. ACTION BUTTONS (TOP) -->
-                            <div class="o_row pt-3 pb-3 d-flex align-items-center gap-2">
-                                <button name="action_calculate_summary" string="Kalkulasi Pilihan (Agregat)" type="object" 
+                            <div class="d-flex flex-wrap gap-2 mb-3 mt-2">
+                                <button name="action_calculate_summary" string="Kalkulasi Pilihan" type="object" 
                                         class="btn-primary" style="min-width: 200px;"/>
                                 <button name="action_generate_picking" string="Generate Delivery Order (DO)" type="object" 
                                         class="btn-success" style="min-width: 200px;"
