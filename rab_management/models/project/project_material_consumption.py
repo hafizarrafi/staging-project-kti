@@ -252,7 +252,7 @@ class ProjectMaterialConsumption(models.Model):
 class ProjectMaterialConsumptionLine(models.Model):
     _name = 'project.material.consumption.line'
     _description = 'Material Consumption Line'
-    _order = 'is_fully_issued, parent_task_display_id, task_id, id'
+    _order = 'parent_task_display_id, task_id, id'
 
     consumption_id = fields.Many2one('project.material.consumption', string='Consumption', ondelete='cascade')
     is_selected = fields.Boolean(string='Select')
