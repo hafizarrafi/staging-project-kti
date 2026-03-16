@@ -132,7 +132,6 @@
                                     <field name="is_fully_issued" column_invisible="True"/>
                                     <field name="is_partially_issued" column_invisible="True"/>
                                     <field name="source_type" column_invisible="True"/>
-                                    <field name="is_selected" string="Select" readonly="is_fully_issued"/>
                                     
                                     <!-- TASK COLUMNS: Only for primary/additional tasks -->
                                     <field name="parent_task_display_id" readonly="1" string="Pekerjaan Utama" 
@@ -157,6 +156,9 @@
                                            column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                     <field name="product_uom_id" readonly="1" string="Satuan"/>
+
+                                    <!-- SELECT COLUMN -->
+                                    <field name="is_selected" string="Select" readonly="is_fully_issued"/>
                                 </list>
                             </field>
                         </page>
