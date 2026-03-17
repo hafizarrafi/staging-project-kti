@@ -63,8 +63,8 @@
                                     <field name="total_qty_unit" string="Total Sisa (unit)" readonly="1"/>
                                     <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
                                            readonly="is_readonly"/>
-                                    <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" class="text-danger border-0"/>
-
+                                    <button name="action_remove_summary" string="Aksi" type="object" icon="fa-trash" title="Hapus" class="text-danger" 
+                                            width="40px" style="max-width: 40px;"/>
                                 </list>
                             </field>
 
@@ -156,10 +156,16 @@
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                     <field name="product_uom_id" readonly="1" string="Satuan"/>
 
-                                    <field name="is_selected" widget="boolean_toggle" string="Pilih" readonly="not is_selectable" 
-                                           invisible="not is_selectable"/>
-                                    <field name="selection_status" readonly="1" string="Status" 
-                                           invisible="is_selectable" decoration-secondary="1" widget="badge"/>
+                                    <button name="action_select_line" string="Aksi" label="Pilih" type="object" 
+                                            class="btn-primary" invisible="is_selected or not is_selectable"
+                                            width="40px"/>
+                                    <button name="action_deselect_line" string="Aksi" label="Batal Pilih" type="object" 
+                                            class="btn-secondary" invisible="not is_selected or not is_selectable"
+                                            width="40px"/>
+                                    
+                                    <field name="selection_status" string="Aksi" readonly="1" 
+                                           invisible="is_selectable" decoration-secondary="1" widget="badge"
+                                           width="40px"/>
                                 </list>
                             </field>
                         </page>
