@@ -62,27 +62,27 @@ class ProjectMaterialConsumption(models.Model):
 
     def action_filter_task_primary(self):
         self._check_exclusivity_switch('task_primary')
-        self.search_source_type = 'task_primary'
+        self.write({'search_source_type': 'task_primary'})
         return self.action_refresh_requirements()
 
     def action_filter_task_additional(self):
         self._check_exclusivity_switch('task_additional')
-        self.search_source_type = 'task_additional'
+        self.write({'search_source_type': 'task_additional'})
         return self.action_refresh_requirements()
 
     def action_filter_additional_material(self):
         self._check_exclusivity_switch('additional')
-        self.search_source_type = 'additional'
+        self.write({'search_source_type': 'additional'})
         return self.action_refresh_requirements()
 
     def action_filter_equipment_primary(self):
         self._check_exclusivity_switch('equipment_primary')
-        self.search_source_type = 'equipment_primary'
+        self.write({'search_source_type': 'equipment_primary'})
         return self.action_refresh_requirements()
 
     def action_filter_equipment_additional(self):
         self._check_exclusivity_switch('equipment_additional')
-        self.search_source_type = 'equipment_additional'
+        self.write({'search_source_type': 'equipment_additional'})
         return self.action_refresh_requirements()
 
     def action_view_project(self):
@@ -279,14 +279,19 @@ class ProjectMaterialConsumption(models.Model):
                 if sf_product and vals.get('product_id') != sf_product.id:
                     return
                 
-                # CALCULATE SORT ORDER (0 for fresh, 10 for issued)
+                # CALCULATE SORT ORDER (0: Fresh, 5: Partial, 10: Issued)
                 line_sort = 0
                 existing_line = existing_lines.get(key)
                 if existing_line:
                     if existing_line.source_type in ['task_primary', 'task_additional']:
                         line_sort = 10 if existing_line.qty_issued_unit > 0 else 0
                     else:
-                        line_sort = 10 if existing_line.is_fully_issued else 0
+                        if existing_line.is_fully_issued:
+                            line_sort = 10
+                        elif existing_line.qty_issued_unit > 0:
+                            line_sort = 5
+                        else:
+                            line_sort = 0
                 
                 vals['sort_order'] = line_sort
                 seen_requirements.add(key)
@@ -369,41 +374,35 @@ class ProjectMaterialConsumption(models.Model):
             # Stage 2: Sort candidates for UI Order
             candidates.sort(key=lambda x: (x['sort_order'], x['task_id'], x['product_id']))
 
-            # Stage 3: Build commands in specific order (FULL RESET SYNC)
-            # We use (5,0,0) followed by (0,0,vals) to force the UI to re-render in order
-            line_vals = [(5, 0, 0)]
-            
-            # First, pull ALL candidates into the list
+            # Stage 3: Hybrid Reconcile (Smart Sync)
+            line_vals = []
+            seen_existing_ids = set()
+
+            # Process candidates: Update existing or Create new
             for c in candidates:
                 vals = c['vals']
                 line = c['existing_line']
                 if line:
-                    # Carry over persistence fields
-                    vals.update({
-                        'is_selected': line.is_selected,
-                        'sort_order': c['sort_order'],
-                    })
-                line_vals.append((0, 0, vals))
+                    # SMART UPDATE: Only write if meaningful fields change
+                    seen_existing_ids.add(line.id)
+                    update_vals = {'sort_order': c['sort_order']}
+                    if line.qty_required_kg != vals.get('qty_required_kg', 0.0):
+                        update_vals['qty_required_kg'] = vals.get('qty_required_kg', 0.0)
+                    if line.qty_required_unit != vals.get('qty_required_unit', 0.0):
+                        update_vals['qty_required_unit'] = vals.get('qty_required_unit', 0.0)
+                    
+                    line_vals.append((1, line.id, update_vals))
+                else:
+                    # CREATE NEW
+                    line_vals.append((0, 0, vals))
 
-            # Second, carry over background selected lines that aren't in the current filter
-            # (Persistence across tabs)
+            # CLEANUP: Remove stale lines (BUT KEEP SELECTED ONES in background)
             for key, line in existing_lines.items():
-                if key not in seen_requirements and line.is_selected:
-                    # Determine vals for background persistence
-                    bg_vals = {
-                        'task_id': line.task_id.id,
-                        'product_id': line.product_id.id,
-                        'source_type': line.source_type,
-                        'additional_purchase_id': line.additional_purchase_id.id,
-                        'equipment_master_id': line.equipment_master_id.id,
-                        'qty_required_kg': line.qty_required_kg,
-                        'qty_required_unit': line.qty_required_unit,
-                        'is_selected': True,
-                        'sort_order': line.sort_order,
-                    }
-                    line_vals.append((0, 0, bg_vals))
+                if line.id not in seen_existing_ids and not line.is_selected:
+                    line_vals.append((2, line.id, 0))
             
-            rec.line_ids = line_vals
+            if line_vals:
+                rec.line_ids = line_vals
                 
         return {}
 
