@@ -210,7 +210,8 @@ class ProjectMaterialConsumption(models.Model):
             # 1. PROCESS ALL TASK REQUIREMENTS
             all_tasks = self.env['project.task'].search([('project_id', '=', rec.project_id.id)])
             for task in all_tasks:
-                source_type = 'task_primary' if task.job_type == 'primary' else 'task_additional'
+                job_type_raw = task.job_type or 'primary'
+                source_type = 'task_primary' if job_type_raw == 'primary' else 'task_additional'
                 
                 # Direct product on task
                 if task.product_id:
