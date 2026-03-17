@@ -64,11 +64,8 @@
                                     <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
                                            readonly="is_readonly"/>
                                     <!-- BUTTON -->
-                                    <button name="action_remove_summary"
-                                           type="object"
-                                           icon="fa-trash"
-                                           title="Hapus"
-                                           style="width:40px;max-width:40px"/>
+                                    <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" 
+                                            class="text-danger" width="40px" style="max-width: 40px;"/>
                                 </list>
                             </field>
 
