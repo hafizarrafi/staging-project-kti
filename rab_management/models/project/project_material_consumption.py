@@ -263,7 +263,10 @@ class ProjectMaterialConsumption(models.Model):
             line_vals = []
             seen_requirements = set()
 
-            def process_requirement(vals, key):
+            # Stage 1: Collect candidates
+            candidates = []
+            
+            def collect_requirement(vals, key):
                 # SAFETY: Prevent crash on missing product_id
                 if not vals.get('product_id'):
                     return
@@ -278,62 +281,56 @@ class ProjectMaterialConsumption(models.Model):
                 
                 # CALCULATE SORT ORDER (0 for fresh, 10 for issued)
                 line_sort = 0
-                if key in existing_lines:
-                    line = existing_lines[key]
-                    if line.source_type in ['task_primary', 'task_additional']:
-                        line_sort = 10 if line.qty_issued_unit > 0 else 0
+                existing_line = existing_lines.get(key)
+                if existing_line:
+                    if existing_line.source_type in ['task_primary', 'task_additional']:
+                        line_sort = 10 if existing_line.qty_issued_unit > 0 else 0
                     else:
-                        line_sort = 10 if line.is_fully_issued else 0
+                        line_sort = 10 if existing_line.is_fully_issued else 0
                 
                 vals['sort_order'] = line_sort
                 seen_requirements.add(key)
-
-                if key in existing_lines:
-                    line = existing_lines[key]
-                    update_vals = {'sort_order': line_sort} 
-                    if line.qty_required_kg != vals.get('qty_required_kg', 0.0):
-                        update_vals['qty_required_kg'] = vals.get('qty_required_kg', 0.0)
-                    if line.qty_required_unit != vals.get('qty_required_unit', 0.0):
-                        update_vals['qty_required_unit'] = vals.get('qty_required_unit', 0.0)
-                    
-                    line_vals.append((1, line.id, update_vals))
-                else:
-                    line_vals.append((0, 0, vals))
+                
+                # Metadata for sorting
+                candidate = {
+                    'vals': vals,
+                    'key': key,
+                    'sort_order': line_sort,
+                    'existing_line': existing_line,
+                    # Tie-breakers for stable UI ordering (IDs are fast and stable)
+                    'task_id': existing_line.task_id.id if existing_line else vals.get('task_id', 0),
+                    'product_id': existing_line.product_id.id if existing_line else vals.get('product_id', 0),
+                }
+                candidates.append(candidate)
 
             # PROCESS TASK REQUIREMENTS
             for task in tasks:
                 source_type = 'task_primary' if task.job_type == 'primary' else 'task_additional'
-                
-                # Direct product on task
                 if task.product_id:
                     key = (task.id, task.product_id.id, source_type, False, False)
-                    weight = task.product_id.weight or 0.0
                     total_kg = task.weight or 0.0
-                    process_requirement({
+                    collect_requirement({
                         'task_id': task.id,
                         'product_id': task.product_id.id,
                         'qty_required_kg': total_kg,
                         'qty_required_unit': total_kg,
                         'source_type': source_type,
                     }, key)
-                
-                # Manual entries
                 for mat in task.material_needed_ids:
                     if mat.source != 'manual' or not mat.product_id: continue
                     key = (task.id, mat.product_id.id, source_type, False, False)
-                    total_kg = mat.weight or 0.0
-                    process_requirement({
+                    collect_requirement({
                         'task_id': task.id,
                         'product_id': mat.product_id.id,
-                        'qty_required_kg': total_kg,
-                        'qty_required_unit': total_kg,
+                        'qty_required_kg': mat.weight or 0.0,
+                        'qty_required_unit': mat.weight or 0.0,
                         'source_type': source_type,
                     }, key)
 
             # PROCESS ADDITIONAL PURCHASES (Material)
             for ap in additional_purchases:
                 key = (False, ap.product_id.id, 'additional', ap.id, False)
-                process_requirement({
+                collect_requirement({
                     'product_id': ap.product_id.id,
                     'qty_required_kg': ap.total_weight or 0.0,
                     'qty_required_unit': ap.total_qty or 0.0,
@@ -345,7 +342,7 @@ class ProjectMaterialConsumption(models.Model):
             for eq in equipment_masters:
                 source_type = 'equipment_primary' if eq.job_type == 'primary' else 'equipment_additional'
                 key = (False, eq.product_id.id, source_type, False, eq.id)
-                process_requirement({
+                collect_requirement({
                     'product_id': eq.product_id.id,
                     'qty_required_kg': 0.0,
                     'qty_required_unit': eq.total_qty or 0.0,
@@ -355,19 +352,37 @@ class ProjectMaterialConsumption(models.Model):
 
             # PROCESS ADDITIONAL EQUIPMENT PURCHASE
             for ap in ap_equipment:
-                key = (False, ap.product_id.id, 'equipment_additional', ap.id, False) # Maps to additional eq source
-                process_requirement({
+                key = (False, ap.product_id.id, 'equipment_additional', ap.id, False)
+                collect_requirement({
                     'product_id': ap.product_id.id,
                     'qty_required_kg': ap.total_weight or 0.0,
                     'qty_required_unit': ap.total_qty or 0.0,
                     'source_type': 'equipment_additional',
                     'additional_purchase_id': ap.id,
                 }, key)
-            
+
             # CLEANUP: Delete any lines that somehow lost their product_id
             bad_lines = rec.line_ids.filtered(lambda l: not l.product_id)
             if bad_lines:
                 bad_lines.unlink()
+
+            # Stage 2: Sort candidates for UI Order
+            candidates.sort(key=lambda x: (x['sort_order'], x['task_id'], x['product_id']))
+
+            # Stage 3: Build commands in specific order
+            line_vals = []
+            for c in candidates:
+                vals = c['vals']
+                line = c['existing_line']
+                if line:
+                    update_vals = {'sort_order': c['sort_order']} 
+                    if line.qty_required_kg != vals.get('qty_required_kg', 0.0):
+                        update_vals['qty_required_kg'] = vals.get('qty_required_kg', 0.0)
+                    if line.qty_required_unit != vals.get('qty_required_unit', 0.0):
+                        update_vals['qty_required_unit'] = vals.get('qty_required_unit', 0.0)
+                    line_vals.append((1, line.id, update_vals))
+                else:
+                    line_vals.append((0, 0, vals))
 
             # Remove stale lines (BUT KEEP SELECTED ONES)
             for key, line in existing_lines.items():
