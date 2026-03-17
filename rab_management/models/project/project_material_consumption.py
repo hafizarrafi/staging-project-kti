@@ -369,28 +369,41 @@ class ProjectMaterialConsumption(models.Model):
             # Stage 2: Sort candidates for UI Order
             candidates.sort(key=lambda x: (x['sort_order'], x['task_id'], x['product_id']))
 
-            # Stage 3: Build commands in specific order
-            line_vals = []
+            # Stage 3: Build commands in specific order (FULL RESET SYNC)
+            # We use (5,0,0) followed by (0,0,vals) to force the UI to re-render in order
+            line_vals = [(5, 0, 0)]
+            
+            # First, pull ALL candidates into the list
             for c in candidates:
                 vals = c['vals']
                 line = c['existing_line']
                 if line:
-                    update_vals = {'sort_order': c['sort_order']} 
-                    if line.qty_required_kg != vals.get('qty_required_kg', 0.0):
-                        update_vals['qty_required_kg'] = vals.get('qty_required_kg', 0.0)
-                    if line.qty_required_unit != vals.get('qty_required_unit', 0.0):
-                        update_vals['qty_required_unit'] = vals.get('qty_required_unit', 0.0)
-                    line_vals.append((1, line.id, update_vals))
-                else:
-                    line_vals.append((0, 0, vals))
+                    # Carry over persistence fields
+                    vals.update({
+                        'is_selected': line.is_selected,
+                        'sort_order': c['sort_order'],
+                    })
+                line_vals.append((0, 0, vals))
 
-            # Remove stale lines (BUT KEEP SELECTED ONES)
+            # Second, carry over background selected lines that aren't in the current filter
+            # (Persistence across tabs)
             for key, line in existing_lines.items():
-                if key not in seen_requirements and not line.is_selected:
-                    line_vals.append((2, line.id, 0))
+                if key not in seen_requirements and line.is_selected:
+                    # Determine vals for background persistence
+                    bg_vals = {
+                        'task_id': line.task_id.id,
+                        'product_id': line.product_id.id,
+                        'source_type': line.source_type,
+                        'additional_purchase_id': line.additional_purchase_id.id,
+                        'equipment_master_id': line.equipment_master_id.id,
+                        'qty_required_kg': line.qty_required_kg,
+                        'qty_required_unit': line.qty_required_unit,
+                        'is_selected': True,
+                        'sort_order': line.sort_order,
+                    }
+                    line_vals.append((0, 0, bg_vals))
             
-            if line_vals:
-                rec.line_ids = line_vals
+            rec.line_ids = line_vals
                 
         return {}
 
