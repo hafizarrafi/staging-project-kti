@@ -63,9 +63,8 @@
                                     <field name="total_qty_unit" string="Total Sisa (unit)" readonly="1"/>
                                     <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
                                            readonly="is_readonly"/>
-                                    <field name="id" string="Aksi" column_invisible="True"/>
-                                        <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" class="text-danger" 
-                                                style="width:40px;max-width:40px;padding:0"/>
+                                    <button name="action_remove_summary" string="Aksi" type="object" 
+                                            icon="fa-trash" width="40px" style="max-width: 40px;"/>
                                 </list>
                             </field>
 
@@ -157,27 +156,27 @@
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                     <field name="product_uom_id" readonly="1" string="Satuan"/>
 
-                                    <button name="action_select_line"
-                                            type="object"
-                                            string="Pilih"
-                                            class="btn-primary"
-                                            invisible="is_selected or not is_selectable"
-                                            style="width:80px;max-width:80px"/>
+                                  <button name="action_select_line"
+                                        type="object"
+                                        string="Pilih"
+                                        class="btn-primary btn-sm"
+                                        invisible="is_selected or not is_selectable"
+                                        style="width:90px"/>
 
-                                    <button name="action_deselect_line"
-                                            type="object"
-                                            string="Batal"
-                                            class="btn-secondary"
-                                            invisible="not is_selected or not is_selectable"
-                                            style="width:80px;max-width:80px"/>
+                                <button name="action_deselect_line"
+                                        type="object"
+                                        string="Batal"
+                                        class="btn-secondary btn-sm"
+                                        invisible="not is_selected or not is_selectable"
+                                        style="width:90px"/>
 
-                                    <field name="selection_status"
-                                        string="Aksi"
+                                <button name="action_select_line"
+                                        type="object"
+                                        string="Sudah Terbit"
+                                        class="btn-light btn-sm text-muted"
                                         readonly="1"
                                         invisible="is_selectable"
-                                        decoration-secondary="1"
-                                        widget="badge"
-                                        style="width:80px;max-width:80px"/>
+                                        style="width:90px"/>
 
                                     <!-- <button name="action_select_line" string="Aksi" label="Pilih" type="object" 
                                             class="btn-primary" invisible="is_selected or not is_selectable"
