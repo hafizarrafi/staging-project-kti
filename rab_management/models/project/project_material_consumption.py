@@ -239,6 +239,10 @@ class ProjectMaterialConsumption(models.Model):
             seen_requirements = set()
 
             def process_requirement(vals, key):
+                # SAFETY: Prevent crash on missing product_id
+                if not vals.get('product_id'):
+                    return
+
                 # Filter by source type if set
                 if rec.search_source_type and vals.get('source_type') != rec.search_source_type:
                     return
@@ -247,17 +251,27 @@ class ProjectMaterialConsumption(models.Model):
                 if sf_product and vals.get('product_id') != sf_product.id:
                     return
                 
-                seen_requirements.add(key)
+                # CALCULATE SORT ORDER (0 for fresh, 10 for issued)
+                line_sort = 0
                 if key in existing_lines:
                     line = existing_lines[key]
-                    update_vals = {}
+                    if line.source_type in ['task_primary', 'task_additional']:
+                        line_sort = 10 if line.qty_issued_unit > 0 else 0
+                    else:
+                        line_sort = 10 if line.is_fully_issued else 0
+                
+                vals['sort_order'] = line_sort
+                seen_requirements.add(key)
+
+                if key in existing_lines:
+                    line = existing_lines[key]
+                    update_vals = {'sort_order': line_sort} 
                     if line.qty_required_kg != vals.get('qty_required_kg', 0.0):
                         update_vals['qty_required_kg'] = vals.get('qty_required_kg', 0.0)
                     if line.qty_required_unit != vals.get('qty_required_unit', 0.0):
                         update_vals['qty_required_unit'] = vals.get('qty_required_unit', 0.0)
                     
-                    if update_vals:
-                        line_vals.append((1, line.id, update_vals))
+                    line_vals.append((1, line.id, update_vals))
                 else:
                     line_vals.append((0, 0, vals))
 
@@ -270,27 +284,24 @@ class ProjectMaterialConsumption(models.Model):
                     key = (task.id, task.product_id.id, source_type, False, False)
                     weight = task.product_id.weight or 0.0
                     total_kg = task.weight or 0.0
-                    units = math.ceil(total_kg / weight) if weight > 0 else 0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': task.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': total_kg, # Standardize to KG for tracking
+                        'qty_required_unit': total_kg,
                         'source_type': source_type,
                     }, key)
                 
                 # Manual entries
                 for mat in task.material_needed_ids:
-                    if mat.source != 'manual': continue
+                    if mat.source != 'manual' or not mat.product_id: continue
                     key = (task.id, mat.product_id.id, source_type, False, False)
-                    weight = mat.product_id.weight or 0.0
                     total_kg = mat.weight or 0.0
-                    units = math.ceil(total_kg / weight) if weight > 0 else 0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': mat.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': total_kg, # Standardize to KG for tracking
+                        'qty_required_unit': total_kg,
                         'source_type': source_type,
                     }, key)
 
@@ -328,6 +339,11 @@ class ProjectMaterialConsumption(models.Model):
                     'additional_purchase_id': ap.id,
                 }, key)
             
+            # CLEANUP: Delete any lines that somehow lost their product_id
+            bad_lines = rec.line_ids.filtered(lambda l: not l.product_id)
+            if bad_lines:
+                bad_lines.unlink()
+
             # Remove stale lines (BUT KEEP SELECTED ONES)
             for key, line in existing_lines.items():
                 if key not in seen_requirements and not line.is_selected:
@@ -468,10 +484,11 @@ class ProjectMaterialConsumption(models.Model):
 class ProjectMaterialConsumptionLine(models.Model):
     _name = 'project.material.consumption.line'
     _description = 'Material Consumption Line'
-    _order = 'parent_task_display_id, task_id, id'
+    _order = 'sort_order, parent_task_display_id, task_id, id'
 
     consumption_id = fields.Many2one('project.material.consumption', string='Consumption', ondelete='cascade')
     is_selected = fields.Boolean(string='Select')
+    sort_order = fields.Integer(string='Sort Order', default=0)
     product_id = fields.Many2one('product.product', string='Product', required=True)
     task_id = fields.Many2one('project.task', string='Task/Subtask')
     additional_purchase_id = fields.Many2one('project.additional.purchase', string='Additonal Purchase Line')
