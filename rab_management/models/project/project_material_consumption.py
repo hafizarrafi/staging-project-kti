@@ -99,27 +99,27 @@ class ProjectMaterialConsumption(models.Model):
             return self.action_refresh_requirements()
 
     def action_calculate_summary(self):
-        """Aggregate selected requirements into summary table."""
+        """Aggregate selected requirements into summary table. Merges with existing summary."""
         self.ensure_one()
-        self.summary_ids.unlink()
         
         selected_lines = self.line_ids.filtered(lambda l: l.is_selected)
         if not selected_lines:
             return
             
-        is_task_source = self.search_source_type in ['task_primary', 'task_additional']
-            
         # Group by product_id
-        aggregation = {} # product_id -> {weight, units, any_issued, fully_issued}
+        aggregation = {} # product_id -> {weight, units, any_issued, fully_issued, is_task_source}
         for line in selected_lines:
             pid = line.product_id.id
+            is_task_source = line.source_type in ['task_primary', 'task_additional']
+            
             if pid not in aggregation:
                 aggregation[pid] = {
                     'weight': 0.0, 
                     'units': 0.0, 
                     'any_issued': False, 
-                    'fully_issued': True, # Start True, will be ANDed
-                    'product': line.product_id
+                    'fully_issued': True,
+                    'product': line.product_id,
+                    'is_task_source': is_task_source # Note: if mixed, tasks take precedence for calc
                 }
             
             data = aggregation[pid]
@@ -128,35 +128,40 @@ class ProjectMaterialConsumption(models.Model):
             data['fully_issued'] = data['fully_issued'] and (line.qty_remaining_unit <= 0)
             
             if not is_task_source:
-                # Piece-based aggregation for manual/eq
                 data['units'] += line.qty_remaining_unit
         
         summary_vals = []
+        existing_summary = {s.product_id.id: s for s in self.summary_ids}
+        
         for pid, data in aggregation.items():
             units = data['units']
-            if is_task_source:
-                # Weight-first calculation for tasks
+            if data['is_task_source']:
                 p_weight = data['product'].weight or 0.0
                 units = math.ceil(data['weight'] / p_weight) if p_weight > 0 else 0
             
-            # Decide if readonly based on user rules
-            # Pattern A (Tasks): Readonly if ANY of selected are issued
-            # Pattern B (Manual): Readonly ONLY if ALL of selected are fully issued
-            is_readonly = False
-            if is_task_source:
-                is_readonly = data['any_issued']
-            else:
-                is_readonly = data['fully_issued']
+            is_readonly = data['any_issued'] if data['is_task_source'] else data['fully_issued']
 
-            summary_vals.append((0, 0, {
-                'consumption_id': self.id,
-                'product_id': pid,
-                'total_weight_kg': data['weight'],
-                'total_qty_unit': units,
-                'qty_to_issue_unit': units,
-                'is_readonly': is_readonly,
-            }))
-        self.summary_ids = summary_vals
+            if pid in existing_summary:
+                # Update existing summary record
+                existing_summary[pid].write({
+                    'total_weight_kg': data['weight'],
+                    'total_qty_unit': units,
+                    'qty_to_issue_unit': units,
+                    'is_readonly': is_readonly,
+                })
+            else:
+                # Create new summary record
+                summary_vals.append((0, 0, {
+                    'consumption_id': self.id,
+                    'product_id': pid,
+                    'total_weight_kg': data['weight'],
+                    'total_qty_unit': units,
+                    'qty_to_issue_unit': units,
+                    'is_readonly': is_readonly,
+                }))
+        
+        if summary_vals:
+            self.summary_ids = summary_vals
 
     def _compute_stock_quants(self):
         for rec in self:
@@ -174,55 +179,9 @@ class ProjectMaterialConsumption(models.Model):
                 rec.line_ids = [(5, 0, 0)]
                 continue
 
-            # Load Search Filters
+            # Load Search Filters (Informational only now, for future use)
             sf_product = rec.search_product_id
             sf_task = rec.search_task_id
-
-            # 1. TASK SOURCES
-            tasks_domain = [('project_id', '=', rec.project_id.id)]
-            if sf_task:
-                tasks_domain.append(('id', 'child_of', sf_task.id))
-            
-            if rec.search_source_type == 'task_primary':
-                tasks_domain.append(('job_type', '=', 'primary'))
-            elif rec.search_source_type == 'task_additional':
-                tasks_domain.append(('job_type', '=', 'additional'))
-            
-            tasks = self.env['project.task'].search(tasks_domain)
-            
-            # 2. ADDITIONAL PURCHASE SOURCE (Material Only, Manual Only)
-            ap_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'material'), ('source', '=', 'manual')]
-            if sf_product:
-                ap_domain.append(('product_id', '=', sf_product.id))
-            if sf_task:
-                # Only show purchases linked to this task or its subtasks
-                ap_domain.append(('task_id', 'child_of', sf_task.id))
-            additional_purchases = self.env['project.additional.purchase'].search(ap_domain)
-            
-            # 3. EQUIPMENT MASTER SOURCE
-            equipment_masters = []
-            eq_domain = [('project_id', '=', rec.project_id.id)]
-            if sf_product:
-                eq_domain.append(('product_id', '=', sf_product.id))
-            
-            if rec.search_source_type == 'equipment_primary':
-                eq_domain.append(('job_type', '=', 'primary'))
-                equipment_masters = self.env['project.equipment.master'].search(eq_domain)
-            elif rec.search_source_type == 'equipment_additional':
-                eq_domain.append(('job_type', '=', 'additional'))
-                equipment_masters = self.env['project.equipment.master'].search(eq_domain)
-            elif not rec.search_source_type: # Global refresh fallback
-                equipment_masters = self.env['project.equipment.master'].search(eq_domain)
-
-            # 4. ADDITIONAL EQUIPMENT SOURCE (Purchases with type equipment)
-            ap_equipment = []
-            if rec.search_source_type == 'equipment_additional' or not rec.search_source_type:
-                ap_eq_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'equipment')]
-                if sf_product:
-                    ap_eq_domain.append(('product_id', '=', sf_product.id))
-                if sf_task:
-                    ap_eq_domain.append(('task_id', 'child_of', sf_task.id))
-                ap_equipment = self.env['project.additional.purchase'].search(ap_eq_domain)
 
             # Map existing lines for preservation
             existing_lines = {}
@@ -234,14 +193,6 @@ class ProjectMaterialConsumption(models.Model):
             seen_requirements = set()
 
             def process_requirement(vals, key):
-                # Filter by source type if set
-                if rec.search_source_type and vals.get('source_type') != rec.search_source_type:
-                    return
-
-                # Filter by product if set
-                if sf_product and vals.get('product_id') != sf_product.id:
-                    return
-                
                 seen_requirements.add(key)
                 if key in existing_lines:
                     line = existing_lines[key]
@@ -256,21 +207,20 @@ class ProjectMaterialConsumption(models.Model):
                 else:
                     line_vals.append((0, 0, vals))
 
-            # PROCESS TASK REQUIREMENTS
-            for task in tasks:
+            # 1. PROCESS ALL TASK REQUIREMENTS
+            all_tasks = self.env['project.task'].search([('project_id', '=', rec.project_id.id)])
+            for task in all_tasks:
                 source_type = 'task_primary' if task.job_type == 'primary' else 'task_additional'
                 
                 # Direct product on task
                 if task.product_id:
                     key = (task.id, task.product_id.id, source_type, False, False)
-                    weight = task.product_id.weight or 0.0
-                    total_kg = task.weight
-                    units = math.ceil(total_kg / weight) if weight > 0 else 0
+                    total_kg = task.weight or 0.0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': task.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': total_kg, # Standardize to KG for tracking
+                        'qty_required_unit': total_kg,
                         'source_type': source_type,
                     }, key)
                 
@@ -278,19 +228,18 @@ class ProjectMaterialConsumption(models.Model):
                 for mat in task.material_needed_ids:
                     if mat.source != 'manual': continue
                     key = (task.id, mat.product_id.id, source_type, False, False)
-                    weight = mat.product_id.weight or 0.0
                     total_kg = mat.weight or 0.0
-                    units = math.ceil(total_kg / weight) if weight > 0 else 0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': mat.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': total_kg, # Standardize to KG for tracking
+                        'qty_required_unit': total_kg,
                         'source_type': source_type,
                     }, key)
 
-            # PROCESS ADDITIONAL PURCHASES (Material)
-            for ap in additional_purchases:
+            # 2. PROCESS ALL ADDITIONAL PURCHASES (Material)
+            all_ap = self.env['project.additional.purchase'].search([('project_id', '=', rec.project_id.id), ('item_type', '=', 'material'), ('source', '=', 'manual')])
+            for ap in all_ap:
                 key = (False, ap.product_id.id, 'additional', ap.id, False)
                 process_requirement({
                     'product_id': ap.product_id.id,
@@ -300,8 +249,9 @@ class ProjectMaterialConsumption(models.Model):
                     'additional_purchase_id': ap.id,
                 }, key)
 
-            # PROCESS EQUIPMENT MASTER
-            for eq in equipment_masters:
+            # 3. PROCESS ALL EQUIPMENT MASTER
+            all_eq = self.env['project.equipment.master'].search([('project_id', '=', rec.project_id.id)])
+            for eq in all_eq:
                 source_type = 'equipment_primary' if eq.job_type == 'primary' else 'equipment_additional'
                 key = (False, eq.product_id.id, source_type, False, eq.id)
                 process_requirement({
@@ -312,9 +262,10 @@ class ProjectMaterialConsumption(models.Model):
                     'equipment_master_id': eq.id,
                 }, key)
 
-            # PROCESS ADDITIONAL EQUIPMENT PURCHASE
-            for ap in ap_equipment:
-                key = (False, ap.product_id.id, 'equipment_additional', ap.id, False) # Maps to additional eq source
+            # 4. PROCESS ALL ADDITIONAL EQUIPMENT PURCHASE
+            all_ap_eq = self.env['project.additional.purchase'].search([('project_id', '=', rec.project_id.id), ('item_type', '=', 'equipment')])
+            for ap in all_ap_eq:
+                key = (False, ap.product_id.id, 'equipment_additional', ap.id, False)
                 process_requirement({
                     'product_id': ap.product_id.id,
                     'qty_required_kg': ap.total_weight or 0.0,
@@ -495,6 +446,26 @@ class ProjectMaterialConsumptionLine(models.Model):
     is_fully_issued = fields.Boolean(string='Terbit Penuh', compute='_compute_issue_status', store=False)
     is_partially_issued = fields.Boolean(string='Terbit Sebagian', compute='_compute_issue_status', store=False)
     allow_partial_issue = fields.Boolean(string='Allow Partial', compute='_compute_allow_partial', store=False)
+    is_selectable = fields.Boolean(string='Dapat Dipilih', compute='_compute_is_selectable')
+
+    def action_select_line(self):
+        for rec in self:
+            if rec.is_selectable:
+                rec.is_selected = True
+
+    def action_deselect_line(self):
+        for rec in self:
+            rec.is_selected = False
+
+    @api.depends('qty_issued_unit', 'source_type', 'is_fully_issued')
+    def _compute_is_selectable(self):
+        for rec in self:
+            if rec.source_type in ['task_primary', 'task_additional']:
+                # For tasks: selectable ONLY if absolutely zero has been issued
+                rec.is_selectable = (rec.qty_issued_unit == 0)
+            else:
+                # For manual/equipment: selectable if not fully issued
+                rec.is_selectable = not rec.is_fully_issued
 
     @api.depends('task_id', 'task_id.parent_id', 'task_id.name', 'source_type', 'additional_purchase_id', 'equipment_master_id')
     def _compute_task_display(self):
@@ -628,3 +599,10 @@ class ProjectMaterialConsumptionSummary(models.Model):
     total_qty_unit = fields.Float(string='Total Required (unit)', digits=(16, 2))
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', digits=(16, 2))
     is_readonly = fields.Boolean(string='Readonly') # Calculated during aggregation
+
+    def action_remove_summary(self):
+        self.ensure_one()
+        # Unselect all matching lines in the requirement table
+        lines_to_unselect = self.consumption_id.line_ids.filtered(lambda l: l.product_id == self.product_id)
+        lines_to_unselect.write({'is_selected': False})
+        self.unlink()

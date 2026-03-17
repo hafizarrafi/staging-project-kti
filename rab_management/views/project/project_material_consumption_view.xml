@@ -57,6 +57,7 @@
                             <separator string="1. Item yang Akan Diterbitkan (Agregat)"/>
                             <field name="summary_ids">
                                 <list string="Aggregated DO List" editable="bottom" create="0" delete="0">
+                                    <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" class="text-danger"/>
                                     <field name="is_readonly" column_invisible="True"/>
                                     <field name="product_id" readonly="1"/>
                                     <field name="total_weight_kg" string="Total Berat (kg)" readonly="1"/>
@@ -125,15 +126,23 @@
 
                             <!-- 5. BOTTOM TABLE: INDIVIDUAL REQUIREMENTS -->
                             <separator string="3. Daftar Kebutuhan"/>
-                            <field name="line_ids">
+                            <field name="line_ids" domain="[('source_type', '=', search_source_type)]">
                                 <list editable="bottom" create="0" delete="0" 
-                                      decoration-muted="is_fully_issued"
+                                      decoration-muted="not is_selectable"
                                       decoration-warning="is_partially_issued">
                                     <field name="is_fully_issued" column_invisible="True"/>
                                     <field name="is_partially_issued" column_invisible="True"/>
+                                    <field name="is_selectable" column_invisible="True"/>
                                     <field name="source_type" column_invisible="True"/>
-                                    <field name="is_selected" string="Select" readonly="is_fully_issued"/>
+                                    <field name="is_selected" column_invisible="True"/>
                                     
+                                    <button name="action_select_line" string="Pilih" type="object" 
+                                            class="btn-primary" invisible="is_selected or not is_selectable"/>
+                                    <button name="action_deselect_line" string="Batal Pilih" type="object" 
+                                            class="btn-secondary" invisible="not is_selected or not is_selectable"/>
+                                    
+                                    <span class="badge text-bg-secondary" invisible="is_selectable">Sudah Terbit</span>
+
                                     <!-- TASK COLUMNS: Only for primary/additional tasks -->
                                     <field name="parent_task_display_id" readonly="1" string="Pekerjaan Utama" 
                                            column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
