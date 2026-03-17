@@ -63,14 +63,12 @@
                                     <field name="total_qty_unit" string="Total Sisa (unit)" readonly="1"/>
                                     <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
                                            readonly="is_readonly"/>
-                                    <field name="id" string="Aksi" column_invisible="True"/>
-
-                                        <!-- BUTTON -->
-                                        <button name="action_remove_summary"
-                                                type="object"
-                                                icon="fa-trash"
-                                                title="Hapus"
-                                                style="width:40px;max-width:40px"/>
+                                    <!-- BUTTON -->
+                                    <button name="action_remove_summary"
+                                           type="object"
+                                           icon="fa-trash"
+                                           title="Hapus"
+                                           style="width:40px;max-width:40px"/>
                                 </list>
                             </field>
 
@@ -161,8 +159,8 @@
                                            column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                     <field name="product_uom_id" readonly="1" string="Satuan"/>
+                                    
 
-                                    <field name="id" string="Status" column_invisible="True"/>
 
                                     <button name="action_select_line"
                                             type="object"
