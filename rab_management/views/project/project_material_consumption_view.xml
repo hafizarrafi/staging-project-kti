@@ -63,7 +63,8 @@
                                     <field name="total_qty_unit" string="Total Sisa (unit)" readonly="1"/>
                                     <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
                                            readonly="is_readonly"/>
-                                    <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" class="text-danger"/>
+                                    <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" class="text-danger border-0"/>
+
                                 </list>
                             </field>
 
@@ -155,12 +156,9 @@
                                     <field name="qty_available" readonly="1" string="Stok site"/>
                                     <field name="product_uom_id" readonly="1" string="Satuan"/>
 
-                                    <button name="action_select_line" string="Pilih" type="object" 
-                                            class="btn-primary" invisible="is_selected or not is_selectable"/>
-                                    <button name="action_deselect_line" string="Batal Pilih" type="object" 
-                                            class="btn-secondary" invisible="not is_selected or not is_selectable"/>
-                                    
-                                    <field name="selection_status" readonly="1" nolabel="1" 
+                                    <field name="is_selected" widget="boolean_toggle" string="Pilih" readonly="not is_selectable" 
+                                           invisible="not is_selectable"/>
+                                    <field name="selection_status" readonly="1" string="Status" 
                                            invisible="is_selectable" decoration-secondary="1" widget="badge"/>
                                 </list>
                             </field>
