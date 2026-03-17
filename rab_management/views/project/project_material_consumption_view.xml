@@ -63,8 +63,8 @@
                                     <field name="total_qty_unit" string="Total Sisa (unit)" readonly="1"/>
                                     <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
                                            readonly="is_readonly"/>
-                                    <button name="action_remove_summary" string="Aksi" type="object" 
-                                            icon="fa-trash" width="40px" style="max-width: 40px;"/>
+                                    <button name="action_remove_summary" type="object" 
+                                            icon="fa-trash" title="Aksi" width="40px" style="max-width: 40px;"/>
                                 </list>
                             </field>
 
