@@ -1,8 +1,0 @@
-<odoo>
-    <menuitem id="menu_rab_root" name="RAB" sequence="10" web_icon="rab_management,static/description/icon.png" groups="sales_team.group_sale_manager,purchase.group_purchase_manager,account.group_account_manager"/>
-    <menuitem
-        id="menu_rab_management"
-        name="Daftar RAB"
-        parent="menu_rab_root"
-        action="action_rab_management"/>
-</odoo>
