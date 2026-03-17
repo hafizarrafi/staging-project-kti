@@ -130,7 +130,7 @@
                             <!-- 5. BOTTOM TABLE: INDIVIDUAL REQUIREMENTS -->
                             <separator string="3. Daftar Kebutuhan"/>
                             <field name="line_ids" domain="[('source_type', '=', search_source_type)]">
-                                <list create="0" delete="0" 
+                                <list create="0" delete="0" default_order="sort_order asc, id asc"
                                       decoration-muted="not is_selectable"
                                       decoration-warning="is_partially_issued">
                                     <field name="sort_order" column_invisible="True"/>

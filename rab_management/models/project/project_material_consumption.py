@@ -391,6 +391,11 @@ class ProjectMaterialConsumption(models.Model):
             
             if line_vals:
                 rec.line_ids = line_vals
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
 
     def action_generate_picking(self):
         self.ensure_one()
