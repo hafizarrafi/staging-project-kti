@@ -42,23 +42,46 @@ class ProjectMaterialConsumption(models.Model):
             self.search_task_id = False
         return self.action_refresh_requirements()
 
+    def _check_exclusivity_switch(self, target_type):
+        """Raise error if attempting to switch between Task and Non-Task groups while selections exist."""
+        group_a = ['task_primary', 'task_additional']
+        group_b = ['additional', 'equipment_primary', 'equipment_additional']
+        
+        selected_types = self.line_ids.filtered(lambda l: l.is_selected).mapped('source_type')
+        if not selected_types:
+            return
+            
+        is_target_a = target_type in group_a
+        is_any_selected_a = any(t in group_a for t in selected_types)
+        is_any_selected_b = any(t in group_b for t in selected_types)
+        
+        if is_target_a and is_any_selected_b:
+            raise UserError(_("Anda memiliki pilihan di Additional/Equipment. Selesaikan atau batalkan pilihan tersebut sebelum pindah ke Pekerjaan."))
+        if not is_target_a and is_any_selected_a:
+            raise UserError(_("Anda memiliki pilihan di Pekerjaan Utama/Additional. Selesaikan atau batalkan pilihan tersebut sebelum pindah ke Additional/Equipment."))
+
     def action_filter_task_primary(self):
+        self._check_exclusivity_switch('task_primary')
         self.search_source_type = 'task_primary'
         return self.action_refresh_requirements()
 
     def action_filter_task_additional(self):
+        self._check_exclusivity_switch('task_additional')
         self.search_source_type = 'task_additional'
         return self.action_refresh_requirements()
 
     def action_filter_additional_material(self):
+        self._check_exclusivity_switch('additional')
         self.search_source_type = 'additional'
         return self.action_refresh_requirements()
 
     def action_filter_equipment_primary(self):
+        self._check_exclusivity_switch('equipment_primary')
         self.search_source_type = 'equipment_primary'
         return self.action_refresh_requirements()
 
     def action_filter_equipment_additional(self):
+        self._check_exclusivity_switch('equipment_additional')
         self.search_source_type = 'equipment_additional'
         return self.action_refresh_requirements()
 
@@ -148,6 +171,7 @@ class ProjectMaterialConsumption(models.Model):
                     'total_qty_unit': units,
                     'qty_to_issue_unit': units,
                     'is_readonly': is_readonly,
+                    'qty_available': self.line_ids.filtered(lambda l: l.product_id.id == pid)[:1].qty_available,
                 })
             else:
                 # Create new summary record
@@ -158,6 +182,7 @@ class ProjectMaterialConsumption(models.Model):
                     'total_qty_unit': units,
                     'qty_to_issue_unit': units,
                     'is_readonly': is_readonly,
+                    'qty_available': self.line_ids.filtered(lambda l: l.product_id.id == pid)[:1].qty_available,
                 }))
         
         if summary_vals:
@@ -670,7 +695,8 @@ class ProjectMaterialConsumptionSummary(models.Model):
     consumption_id = fields.Many2one('project.material.consumption', ondelete='cascade')
     product_id = fields.Many2one('product.product', string='Product', required=True)
     total_weight_kg = fields.Float(string='Total Required (kg)', digits=(16, 2))
-    total_qty_unit = fields.Float(string='Total Required (unit)', digits=(16, 2))
+    total_qty_unit = fields.Float(string='Qty Dibutuhkan', digits=(16, 2))
+    qty_available = fields.Float(string='Stock Site', digits=(16, 2))
     qty_to_issue_unit = fields.Float(string='Akan Terbit (unit)', digits=(16, 2))
     is_readonly = fields.Boolean(string='Readonly') # Calculated during aggregation
 

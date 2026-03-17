@@ -59,13 +59,14 @@
                                 <list string="Aggregated DO List" editable="bottom" create="0" delete="0">
                                     <field name="is_readonly" column_invisible="True"/>
                                     <field name="product_id" readonly="1"/>
+                                    <field name="qty_available" readonly="1" string="Stock Site"/>
                                     <field name="total_weight_kg" string="Total Berat (kg)" readonly="1"/>
-                                    <field name="total_qty_unit" string="Total Sisa (unit)" readonly="1"/>
+                                    <field name="total_qty_unit" string="Qty Dibutuhkan" readonly="1"/>
                                     <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
                                            readonly="is_readonly"/>
                                     <!-- BUTTON -->
                                     <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" 
-                                            class="text-danger" width="40px" style="max-width: 40px;"/>
+                                            class="text-danger" width="40px" style="max-width: 100px;"/>
                                 </list>
                             </field>
 
