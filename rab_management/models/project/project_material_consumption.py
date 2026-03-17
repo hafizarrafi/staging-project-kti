@@ -35,8 +35,8 @@ class ProjectMaterialConsumption(models.Model):
         ('equipment_additional', 'Equipment Additional')
     ], string='Filter Sumber', default='task_primary')
     
-    @api.onchange('search_source_type')
-    def _onchange_search_source_type(self):
+    @api.onchange('search_source_type', 'search_product_id', 'search_task_id')
+    def _onchange_filters_refresh(self):
         # Only task types need the task filter
         if self.search_source_type not in ['task_primary', 'task_additional']:
             self.search_task_id = False
@@ -200,6 +200,7 @@ class ProjectMaterialConsumption(models.Model):
             if sf_product:
                 ap_domain.append(('product_id', '=', sf_product.id))
             if sf_task:
+                # Only show purchases linked to this task or its subtasks
                 ap_domain.append(('task_id', 'child_of', sf_task.id))
             additional_purchases = self.env['project.additional.purchase'].search(ap_domain)
             
@@ -218,7 +219,7 @@ class ProjectMaterialConsumption(models.Model):
             elif not rec.search_source_type: # Global refresh fallback
                 equipment_masters = self.env['project.equipment.master'].search(eq_domain)
 
-            # 4. ADDITIONAL EQUIPMENT SOURCE
+            # 4. ADDITIONAL EQUIPMENT SOURCE (Purchases with type equipment)
             ap_equipment = []
             if rec.search_source_type == 'equipment_additional' or not rec.search_source_type:
                 ap_eq_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'equipment')]
@@ -238,6 +239,14 @@ class ProjectMaterialConsumption(models.Model):
             seen_requirements = set()
 
             def process_requirement(vals, key):
+                # Filter by source type if set
+                if rec.search_source_type and vals.get('source_type') != rec.search_source_type:
+                    return
+
+                # Filter by product if set
+                if sf_product and vals.get('product_id') != sf_product.id:
+                    return
+                
                 seen_requirements.add(key)
                 if key in existing_lines:
                     line = existing_lines[key]
@@ -254,33 +263,38 @@ class ProjectMaterialConsumption(models.Model):
 
             # PROCESS TASK REQUIREMENTS
             for task in tasks:
-                job_type_raw = task.job_type or 'primary'
-                source_type = 'task_primary' if job_type_raw == 'primary' else 'task_additional'
+                source_type = 'task_primary' if task.job_type == 'primary' else 'task_additional'
                 
+                # Direct product on task
                 if task.product_id:
                     key = (task.id, task.product_id.id, source_type, False, False)
+                    weight = task.product_id.weight or 0.0
                     total_kg = task.weight or 0.0
+                    units = math.ceil(total_kg / weight) if weight > 0 else 0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': task.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': total_kg,
+                        'qty_required_unit': total_kg, # Standardize to KG for tracking
                         'source_type': source_type,
                     }, key)
                 
+                # Manual entries
                 for mat in task.material_needed_ids:
                     if mat.source != 'manual': continue
                     key = (task.id, mat.product_id.id, source_type, False, False)
+                    weight = mat.product_id.weight or 0.0
                     total_kg = mat.weight or 0.0
+                    units = math.ceil(total_kg / weight) if weight > 0 else 0
                     process_requirement({
                         'task_id': task.id,
                         'product_id': mat.product_id.id,
                         'qty_required_kg': total_kg,
-                        'qty_required_unit': total_kg,
+                        'qty_required_unit': total_kg, # Standardize to KG for tracking
                         'source_type': source_type,
                     }, key)
 
-            # PROCESS ADDITIONAL PURCHASES
+            # PROCESS ADDITIONAL PURCHASES (Material)
             for ap in additional_purchases:
                 key = (False, ap.product_id.id, 'additional', ap.id, False)
                 process_requirement({
@@ -305,7 +319,7 @@ class ProjectMaterialConsumption(models.Model):
 
             # PROCESS ADDITIONAL EQUIPMENT PURCHASE
             for ap in ap_equipment:
-                key = (False, ap.product_id.id, 'equipment_additional', ap.id, False)
+                key = (False, ap.product_id.id, 'equipment_additional', ap.id, False) # Maps to additional eq source
                 process_requirement({
                     'product_id': ap.product_id.id,
                     'qty_required_kg': ap.total_weight or 0.0,
@@ -314,7 +328,7 @@ class ProjectMaterialConsumption(models.Model):
                     'additional_purchase_id': ap.id,
                 }, key)
             
-            # Remove stale lines (BUT KEEP SELECTED ONES FOR PERSISTENCE)
+            # Remove stale lines (BUT KEEP SELECTED ONES)
             for key, line in existing_lines.items():
                 if key not in seen_requirements and not line.is_selected:
                     line_vals.append((2, line.id, 0))
