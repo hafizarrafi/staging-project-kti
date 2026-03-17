@@ -90,6 +90,12 @@ class ProjectProject(models.Model):
         string='Semua Sales Order Proyek',
     )
 
+    purchase_order_ids = fields.One2many(
+        'purchase.order',
+        'project_id',
+        string='Purchase Orders',
+    )
+
     issue_ids = fields.One2many(
         'project.material.issue',
         'project_id',
@@ -448,24 +454,51 @@ class ProjectProject(models.Model):
             managed_products.add(pid)
             product_quantities[pid] = product_quantities.get(pid, 0.0) + self.rewelding_kebutuhan_dus
 
+        # 5. Overhead items (Man Power, Operasional, Mob Demob, Oksigen, LPG)
+        overhead_prices = {}
+        overhead_map = {
+            'manpower': self.total_manpower,
+            'operasional': self.total_operasional,
+            'mobdemob': self.total_mobdemob,
+            'oksigen': self.total_oksigen,
+            'lpg': self.total_lpg,
+        }
+        for category, amount in overhead_map.items():
+            if not amount:
+                continue
+            product = self.env['product.product'].search(
+                [('category_project', '=', category)], limit=1)
+            if not product:
+                continue
+            pid = product.id
+            managed_products.add(pid)
+            product_quantities[pid] = 1.0
+            overhead_prices[pid] = amount
+
         # Update, Create or keep RAB lines
         for line in rab.line_ids:
             pid = line.product_id.id
             if pid in managed_products:
                 # Update existing line quantity (using qty_beli, can be 0)
                 quantity = product_quantities.get(pid, 0.0)
-                line.write({'quantity': quantity})
+                update_vals = {'quantity': quantity}
+                if pid in overhead_prices:
+                    update_vals['purchase_price'] = overhead_prices[pid]
+                line.write(update_vals)
                 # Remove from dict so we don't create it again
                 product_quantities.pop(pid, None)
                 # DO NOT DELETE managed lines anymore
 
         # Create new RAB lines for remaining products in product_quantities
         for product_id, quantity in product_quantities.items():
-            RabLine.create({
+            create_vals = {
                 'rab_id': rab.id,
                 'product_id': product_id,
                 'quantity': quantity,
-            })
+            }
+            if product_id in overhead_prices:
+                create_vals['purchase_price'] = overhead_prices[product_id]
+            RabLine.create(create_vals)
 
         return {
             'type': 'ir.actions.client',

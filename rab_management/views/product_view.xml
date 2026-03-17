@@ -12,6 +12,14 @@
                 </group>
             </xpath>
 
+            <page name="invoicing" position="before">
+                <page string="Project" name="project_category">
+                    <group>
+                        <field name="category_project"/>
+                    </group>
+                </page>
+            </page>
+
         </field>
     </record>
 </odoo>

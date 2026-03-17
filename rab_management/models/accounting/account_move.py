@@ -17,6 +17,22 @@ class AccountMove(models.Model):
         readonly=True,
         copy=False,
     )
+    
+    def action_post(self):
+        result = super().action_post()
+        vendor_bills = self.filtered(lambda m: m.move_type == 'in_invoice')
+        if vendor_bills:
+            po_lines = self.env['account.move.line'].search([
+                ('move_id', 'in', vendor_bills.ids),
+                ('purchase_line_id', '!=', False),
+            ])
+            projects = po_lines.purchase_line_id.order_id.project_id.filtered('id')
+            if projects:
+                projects._compute_aktual_material()
+                projects._compute_aktual_equipment()
+                projects._compute_aktual_kawat_las()
+                projects._compute_aktual_by_category()
+        return result
 
     def action_add_to_budget(self):
         self.ensure_one()

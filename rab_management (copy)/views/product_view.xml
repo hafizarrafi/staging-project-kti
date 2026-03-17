@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_product_form_inherit_rab" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.rab</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//sheet" position="inside">
+                <group string="Field Khusus Barang Repair">
+                    <field name="massa_jenis"/>
+                </group>
+            </xpath>
+
+            <page name="invoicing" position="before">
+                <page string="Project" name="project_category">
+                    <group>
+                        <field name="category_project"/>
+                    </group>
+                </page>
+            </page>
+
+        </field>
+    </record>
+</odoo>

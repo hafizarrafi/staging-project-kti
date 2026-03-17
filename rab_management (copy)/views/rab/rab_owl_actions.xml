@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_rab_vendor_comparison_owl" model="ir.actions.client">
+        <field name="name">RAB Vendor Comparison</field>
+        <field name="tag">rab_vendor_comparison_action</field>
+    </record>
+</odoo>

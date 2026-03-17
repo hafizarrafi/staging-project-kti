@@ -154,6 +154,15 @@
 
            <xpath expr="//page[@name='summary']" position="after">
                 <page string="Ringkasan Aktual" name="summary_aktual">
+                    <div class="mb-3">
+                        <button
+                            name="action_recompute_aktual"
+                            type="object"
+                            string="Hitung Ulang Aktual"
+                            class="btn-secondary"
+                            icon="fa-refresh"
+                        />
+                    </div>
                     <group>
                         <group string="Realisasi Biaya">
                             <field name="currency_id" invisible="1"/>
@@ -256,6 +265,16 @@
                             <field name="aktual_lpg" string="8. LPG" widget="monetary"/>
                         </group>
                     </group>
+                </page>
+                <page string="Purchase Orders" name="purchase_orders">
+                    <field name="purchase_order_ids" nolabel="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="partner_id"/>
+                            <field name="amount_total"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
                 </page>
                 <page string="Material Proyek" name="material_project">
                         <button

@@ -111,6 +111,41 @@ class ProjectProject(models.Model):
         for rec in self:
             rec.aktual_equipment = rec.equipment_total_rab + rec.equipment_add_total_rab
 
+    def _compute_aktual_kawat_las(self):
+        for rec in self:
+            total = sum(rec.issue_ids.filtered(lambda i: i.state == 'done').mapped('issue_line_ids').filtered(lambda l: l.product_id.is_consumable_project).mapped('qty_issued_weight'))
+            rec.aktual_kawat_las = total
+            rec._compute_aktual_total()
+    
+    def _compute_aktual_by_category(self):
+        for rec in self:
+            # category -> total_amount from vendor bills
+            categories = ['manpower', 'operasional', 'mobdemob', 'oksigen', 'lpg']
+            for cat in categories:
+                po_lines = self.env['account.move.line'].search([
+                    ('purchase_line_id.order_id.project_id', '=', rec.id),
+                    ('product_id.category_project', '=', cat),
+                    ('move_id.state', '=', 'posted'),
+                ])
+                setattr(rec, 'aktual_' + cat, sum(po_lines.mapped('price_subtotal')))
+
+    def action_recompute_aktual(self):
+        self.ensure_one()
+        self._compute_aktual_material()
+        self._compute_aktual_equipment()
+        self._compute_aktual_kawat_las()
+        self._compute_aktual_by_category()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Selesai',
+                'message': 'Aktual Material dan Equipment berhasil dihitung ulang.',
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
     @api.depends('aktual_material', 'aktual_equipment', 'aktual_manpower',
                  'aktual_operasional', 'aktual_mobdemob', 'aktual_kawat_las',
                  'aktual_oksigen', 'aktual_lpg')

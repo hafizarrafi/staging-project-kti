@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_task_form2_inherit_rab_subtask" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.rab.subtask</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+
+            <!-- HAPUS kolom Assignees -->
+            <xpath expr="//page[@name='sub_tasks_page']//field[@name='child_ids']/list/field[@name='user_ids']"
+                   position="replace"/>
+
+            <!-- TAMBAH kolom SETELAH name -->
+            <xpath expr="//page[@name='sub_tasks_page']//field[@name='child_ids']/list/field[@name='name']"
+                   position="after">
+
+                <field name="job_type" column_invisible="True"/>
+                <field name="product_id" optional="show"/>
+                <field name="panjang" optional="show"/>
+                <field name="lebar" optional="show"/>
+                <field name="tebal" optional="show"/>
+                <field name="qty" optional="show"/>
+                <field name="panjang_las" readonly="1" optional="show"/>
+                <field name="weight" readonly="1" optional="show"/>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
