@@ -239,34 +239,28 @@ class ProjectMaterialConsumption(models.Model):
             seen_requirements = set()
 
             def process_requirement(vals, key):
-
-                # safety guard
-                if not vals.get('product_id'):
-                    return
-
+                # Filter by source type if set
                 if rec.search_source_type and vals.get('source_type') != rec.search_source_type:
                     return
 
+                # Filter by product if set
                 if sf_product and vals.get('product_id') != sf_product.id:
                     return
-
+                
                 seen_requirements.add(key)
-
                 if key in existing_lines:
                     line = existing_lines[key]
                     update_vals = {}
-
                     if line.qty_required_kg != vals.get('qty_required_kg', 0.0):
                         update_vals['qty_required_kg'] = vals.get('qty_required_kg', 0.0)
-
                     if line.qty_required_unit != vals.get('qty_required_unit', 0.0):
                         update_vals['qty_required_unit'] = vals.get('qty_required_unit', 0.0)
-
+                    
                     if update_vals:
                         line_vals.append((1, line.id, update_vals))
-
                 else:
                     line_vals.append((0, 0, vals))
+
             # PROCESS TASK REQUIREMENTS
             for task in tasks:
                 source_type = 'task_primary' if task.job_type == 'primary' else 'task_additional'
