@@ -141,7 +141,8 @@
                                     <button name="action_deselect_line" string="Batal Pilih" type="object" 
                                             class="btn-secondary" invisible="not is_selected or not is_selectable"/>
                                     
-                                    <span class="badge text-bg-secondary" invisible="is_selectable">Sudah Terbit</span>
+                                    <field name="selection_status" readonly="1" nolabel="1" 
+                                           invisible="is_selectable" decoration-secondary="1" widget="badge"/>
 
                                     <!-- TASK COLUMNS: Only for primary/additional tasks -->
                                     <field name="parent_task_display_id" readonly="1" string="Pekerjaan Utama" 

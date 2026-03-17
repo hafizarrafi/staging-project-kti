@@ -447,6 +447,7 @@ class ProjectMaterialConsumptionLine(models.Model):
     is_partially_issued = fields.Boolean(string='Terbit Sebagian', compute='_compute_issue_status', store=False)
     allow_partial_issue = fields.Boolean(string='Allow Partial', compute='_compute_allow_partial', store=False)
     is_selectable = fields.Boolean(string='Dapat Dipilih', compute='_compute_is_selectable')
+    selection_status = fields.Char(string='Status', compute='_compute_is_selectable')
 
     def action_select_line(self):
         for rec in self:
@@ -466,6 +467,8 @@ class ProjectMaterialConsumptionLine(models.Model):
             else:
                 # For manual/equipment: selectable if not fully issued
                 rec.is_selectable = not rec.is_fully_issued
+            
+            rec.selection_status = _('Sudah Terbit') if not rec.is_selectable else ''
 
     @api.depends('task_id', 'task_id.parent_id', 'task_id.name', 'source_type', 'additional_purchase_id', 'equipment_master_id')
     def _compute_task_display(self):
