@@ -119,7 +119,7 @@ class ProjectMaterialConsumption(models.Model):
                     'any_issued': False, 
                     'fully_issued': True,
                     'product': line.product_id,
-                    'is_task_source': is_task_source # Note: if mixed, tasks take precedence for calc
+                    'is_task_source': is_task_source
                 }
             
             data = aggregation[pid]
@@ -179,9 +179,54 @@ class ProjectMaterialConsumption(models.Model):
                 rec.line_ids = [(5, 0, 0)]
                 continue
 
-            # Load Search Filters (Informational only now, for future use)
+            # Load Search Filters
             sf_product = rec.search_product_id
             sf_task = rec.search_task_id
+
+            # 1. TASK SOURCES
+            tasks_domain = [('project_id', '=', rec.project_id.id)]
+            if sf_task:
+                tasks_domain.append(('id', 'child_of', sf_task.id))
+            
+            if rec.search_source_type == 'task_primary':
+                tasks_domain.append(('job_type', '=', 'primary'))
+            elif rec.search_source_type == 'task_additional':
+                tasks_domain.append(('job_type', '=', 'additional'))
+            
+            tasks = self.env['project.task'].search(tasks_domain)
+            
+            # 2. ADDITIONAL PURCHASE SOURCE (Material Only, Manual Only)
+            ap_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'material'), ('source', '=', 'manual')]
+            if sf_product:
+                ap_domain.append(('product_id', '=', sf_product.id))
+            if sf_task:
+                ap_domain.append(('task_id', 'child_of', sf_task.id))
+            additional_purchases = self.env['project.additional.purchase'].search(ap_domain)
+            
+            # 3. EQUIPMENT MASTER SOURCE
+            equipment_masters = []
+            eq_domain = [('project_id', '=', rec.project_id.id)]
+            if sf_product:
+                eq_domain.append(('product_id', '=', sf_product.id))
+            
+            if rec.search_source_type == 'equipment_primary':
+                eq_domain.append(('job_type', '=', 'primary'))
+                equipment_masters = self.env['project.equipment.master'].search(eq_domain)
+            elif rec.search_source_type == 'equipment_additional':
+                eq_domain.append(('job_type', '=', 'additional'))
+                equipment_masters = self.env['project.equipment.master'].search(eq_domain)
+            elif not rec.search_source_type: # Global refresh fallback
+                equipment_masters = self.env['project.equipment.master'].search(eq_domain)
+
+            # 4. ADDITIONAL EQUIPMENT SOURCE
+            ap_equipment = []
+            if rec.search_source_type == 'equipment_additional' or not rec.search_source_type:
+                ap_eq_domain = [('project_id', '=', rec.project_id.id), ('item_type', '=', 'equipment')]
+                if sf_product:
+                    ap_eq_domain.append(('product_id', '=', sf_product.id))
+                if sf_task:
+                    ap_eq_domain.append(('task_id', 'child_of', sf_task.id))
+                ap_equipment = self.env['project.additional.purchase'].search(ap_eq_domain)
 
             # Map existing lines for preservation
             existing_lines = {}
@@ -207,13 +252,11 @@ class ProjectMaterialConsumption(models.Model):
                 else:
                     line_vals.append((0, 0, vals))
 
-            # 1. PROCESS ALL TASK REQUIREMENTS
-            all_tasks = self.env['project.task'].search([('project_id', '=', rec.project_id.id)])
-            for task in all_tasks:
+            # PROCESS TASK REQUIREMENTS
+            for task in tasks:
                 job_type_raw = task.job_type or 'primary'
                 source_type = 'task_primary' if job_type_raw == 'primary' else 'task_additional'
                 
-                # Direct product on task
                 if task.product_id:
                     key = (task.id, task.product_id.id, source_type, False, False)
                     total_kg = task.weight or 0.0
@@ -225,7 +268,6 @@ class ProjectMaterialConsumption(models.Model):
                         'source_type': source_type,
                     }, key)
                 
-                # Manual entries
                 for mat in task.material_needed_ids:
                     if mat.source != 'manual': continue
                     key = (task.id, mat.product_id.id, source_type, False, False)
@@ -238,9 +280,8 @@ class ProjectMaterialConsumption(models.Model):
                         'source_type': source_type,
                     }, key)
 
-            # 2. PROCESS ALL ADDITIONAL PURCHASES (Material)
-            all_ap = self.env['project.additional.purchase'].search([('project_id', '=', rec.project_id.id), ('item_type', '=', 'material'), ('source', '=', 'manual')])
-            for ap in all_ap:
+            # PROCESS ADDITIONAL PURCHASES
+            for ap in additional_purchases:
                 key = (False, ap.product_id.id, 'additional', ap.id, False)
                 process_requirement({
                     'product_id': ap.product_id.id,
@@ -250,9 +291,8 @@ class ProjectMaterialConsumption(models.Model):
                     'additional_purchase_id': ap.id,
                 }, key)
 
-            # 3. PROCESS ALL EQUIPMENT MASTER
-            all_eq = self.env['project.equipment.master'].search([('project_id', '=', rec.project_id.id)])
-            for eq in all_eq:
+            # PROCESS EQUIPMENT MASTER
+            for eq in equipment_masters:
                 source_type = 'equipment_primary' if eq.job_type == 'primary' else 'equipment_additional'
                 key = (False, eq.product_id.id, source_type, False, eq.id)
                 process_requirement({
@@ -263,9 +303,8 @@ class ProjectMaterialConsumption(models.Model):
                     'equipment_master_id': eq.id,
                 }, key)
 
-            # 4. PROCESS ALL ADDITIONAL EQUIPMENT PURCHASE
-            all_ap_eq = self.env['project.additional.purchase'].search([('project_id', '=', rec.project_id.id), ('item_type', '=', 'equipment')])
-            for ap in all_ap_eq:
+            # PROCESS ADDITIONAL EQUIPMENT PURCHASE
+            for ap in ap_equipment:
                 key = (False, ap.product_id.id, 'equipment_additional', ap.id, False)
                 process_requirement({
                     'product_id': ap.product_id.id,
@@ -275,9 +314,9 @@ class ProjectMaterialConsumption(models.Model):
                     'additional_purchase_id': ap.id,
                 }, key)
             
-            # Remove stale lines
+            # Remove stale lines (BUT KEEP SELECTED ONES FOR PERSISTENCE)
             for key, line in existing_lines.items():
-                if key not in seen_requirements:
+                if key not in seen_requirements and not line.is_selected:
                     line_vals.append((2, line.id, 0))
             
             if line_vals:

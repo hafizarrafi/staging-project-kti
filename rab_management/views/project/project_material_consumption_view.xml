@@ -126,7 +126,7 @@
 
                             <!-- 5. BOTTOM TABLE: INDIVIDUAL REQUIREMENTS -->
                             <separator string="3. Daftar Kebutuhan"/>
-                             <field name="line_ids" domain="[('source_type', '=', search_source_type), ('product_id', 'child_of', search_product_id or []), ('task_id', 'child_of', search_task_id or [])]">
+                            <field name="line_ids" domain="[('source_type', '=', search_source_type), ('product_id', 'child_of', search_product_id or []), ('task_id', 'child_of', search_task_id or [])]">
                                 <list editable="bottom" create="0" delete="0" 
                                       decoration-muted="not is_selectable"
                                       decoration-warning="is_partially_issued">
@@ -136,15 +136,10 @@
                                     <field name="source_type" column_invisible="True"/>
                                     <field name="is_selected" column_invisible="True"/>
                                     
-                                    <!-- TASK COLUMNS: Only for primary/additional tasks -->
                                     <field name="parent_task_display_id" readonly="1" string="Pekerjaan Utama" 
                                            column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
-                                    <field name="subtask_display_name" readonly="1" string="Sub-pekerjaan"
-                                           column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
                                     
-                                    <!-- NON-TASK COLUMNS -->
-                                    <field name="subtask_display_name" readonly="1" string="Detail Sumber"
-                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
+                                    <field name="subtask_display_name" readonly="1" string="Detail/Sub-pekerjaan"/>
                                     
                                     <field name="product_id" readonly="1"/>
                                     
