@@ -132,7 +132,7 @@
                                     <field name="is_fully_issued" column_invisible="True"/>
                                     <field name="is_partially_issued" column_invisible="True"/>
                                     <field name="source_type" column_invisible="True"/>
-                                    <field name="is_selected" string="Select" readonly="is_fullissued"/>
+                                    <field name="is_selected" string="Select" readonly="is_fully_issued"/>
                                     
                                     <!-- TASK COLUMNS: Only for primary/additional tasks -->
                                     <field name="parent_task_display_id" readonly="1" string="Pekerjaan Utama" 
