@@ -96,18 +96,6 @@ class ProjectProject(models.Model):
         string='Purchase Orders',
     )
 
-    issue_ids = fields.One2many(
-        'project.material.issue',
-        'project_id',
-        string='Material Issues'
-    )
-
-    consumption_ids = fields.One2many(
-        'project.material.consumption',
-        'project_id',
-        string='Material Consumptions'
-    )
-
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
@@ -169,48 +157,6 @@ class ProjectProject(models.Model):
             'res_model': 'rab.management',
             'view_mode': 'list,form',
             'domain': [('id', 'in', rab_ids)],
-            'target': 'current',
-        }
-
-    def action_view_material_issues(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Material Issues',
-            'res_model': 'project.material.issue',
-            'view_mode': 'list,form',
-            'domain': [('project_id', '=', self.id)],
-            'context': {'default_project_id': self.id},
-            'target': 'current',
-        }
-
-    def action_open_issue_wizard(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Generate Material Issue',
-            'res_model': 'project.material.issue.wizard',
-            'view_mode': 'form',
-            'context': {'default_project_id': self.id},
-            'target': 'new',
-        }
-
-    def action_view_stock_management(self):
-        self.ensure_one()
-        # Find or create singleton dashboard for this project
-        dashboard = self.env['project.material.consumption'].search([('project_id', '=', self.id)], limit=1)
-        if not dashboard:
-            dashboard = self.env['project.material.consumption'].create({'project_id': self.id})
-        
-        # Refresh lines to ensure they match task requirements
-        dashboard.action_refresh_requirements()
-        
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Stock Management',
-            'res_model': 'project.material.consumption',
-            'res_id': dashboard.id,
-            'view_mode': 'form',
             'target': 'current',
         }
 
@@ -427,6 +373,8 @@ class ProjectProject(models.Model):
         # Aggregate all products and track managed products
         product_quantities = {}
         managed_products = set()
+        # overhead_prices: product_id -> purchase_price (untuk item overhead, qty selalu 1)
+        overhead_prices = {}
 
         # 1. Primary Material
         for mat in self.material_master_ids.filtered(lambda m: m.job_type == 'primary'):
@@ -455,7 +403,8 @@ class ProjectProject(models.Model):
             product_quantities[pid] = product_quantities.get(pid, 0.0) + self.rewelding_kebutuhan_dus
 
         # 5. Overhead items (Man Power, Operasional, Mob Demob, Oksigen, LPG)
-        overhead_prices = {}
+        #    Setiap kategori diambil dari produk ber-category_project yang sesuai,
+        #    qty = 1, purchase_price = nilai yang diinput di project estimasi
         overhead_map = {
             'manpower': self.total_manpower,
             'operasional': self.total_operasional,
@@ -479,15 +428,11 @@ class ProjectProject(models.Model):
         for line in rab.line_ids:
             pid = line.product_id.id
             if pid in managed_products:
-                # Update existing line quantity (using qty_beli, can be 0)
-                quantity = product_quantities.get(pid, 0.0)
-                update_vals = {'quantity': quantity}
+                update_vals = {'quantity': product_quantities.get(pid, 0.0)}
                 if pid in overhead_prices:
                     update_vals['purchase_price'] = overhead_prices[pid]
                 line.write(update_vals)
-                # Remove from dict so we don't create it again
                 product_quantities.pop(pid, None)
-                # DO NOT DELETE managed lines anymore
 
         # Create new RAB lines for remaining products in product_quantities
         for product_id, quantity in product_quantities.items():

@@ -17,7 +17,7 @@ class AccountMove(models.Model):
         readonly=True,
         copy=False,
     )
-    
+
     def action_post(self):
         result = super().action_post()
         vendor_bills = self.filtered(lambda m: m.move_type == 'in_invoice')

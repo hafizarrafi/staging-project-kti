@@ -36,19 +36,19 @@ class ProjectProject(models.Model):
     total_manpower = fields.Monetary(
         string='Tenaga Kerja',
         currency_field='currency_id',
-        default=0.0
+        default=0.0,
     )
 
     total_operasional = fields.Monetary(
         string='Operasional',
         currency_field='currency_id',
-        default=0.0
+        default=0.0,
     )
 
     total_mobdemob = fields.Monetary(
         string='Mobilisasi Demobilisasi',
         currency_field='currency_id',
-        default=0.0
+        default=0.0,
     )
 
     total_kawat_las = fields.Monetary(
@@ -69,13 +69,13 @@ class ProjectProject(models.Model):
     total_oksigen = fields.Monetary(
         string='Oksigen',
         currency_field='currency_id',
-        default=0.0
+        default=0.0,
     )
 
     total_lpg = fields.Monetary(
         string='LPG',
         currency_field='currency_id',
-        default=0.0
+        default=0.0,
     )
 
     sub_total_summary = fields.Monetary(

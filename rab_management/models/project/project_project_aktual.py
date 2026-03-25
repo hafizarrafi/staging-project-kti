@@ -32,33 +32,39 @@ class ProjectProject(models.Model):
     )
     aktual_manpower = fields.Monetary(
         string='Man Power (Aktual)',
+        compute='_compute_aktual_by_category',
+        store=True,
         currency_field='currency_id',
-        default=0.0
     )
     aktual_operasional = fields.Monetary(
         string='Operasional (Aktual)',
+        compute='_compute_aktual_by_category',
+        store=True,
         currency_field='currency_id',
-        default=0.0
     )
     aktual_mobdemob = fields.Monetary(
         string='Mob Demob (Aktual)',
+        compute='_compute_aktual_by_category',
+        store=True,
         currency_field='currency_id',
-        default=0.0
     )
     aktual_kawat_las = fields.Monetary(
         string='Kawat Las (Aktual)',
+        compute='_compute_aktual_kawat_las',
+        store=True,
         currency_field='currency_id',
-        default=0.0
     )
     aktual_oksigen = fields.Monetary(
         string='Oksigen (Aktual)',
+        compute='_compute_aktual_by_category',
+        store=True,
         currency_field='currency_id',
-        default=0.0
     )
     aktual_lpg = fields.Monetary(
         string='LPG (Aktual)',
+        compute='_compute_aktual_by_category',
+        store=True,
         currency_field='currency_id',
-        default=0.0
     )
     sub_total_aktual = fields.Monetary(
         string='Total Aktual',
@@ -101,50 +107,39 @@ class ProjectProject(models.Model):
             else:
                 rec.total_margin = 0.0
 
-    @api.depends('material_total_rab', 'material_add_total_rab')
+    @api.depends('material_master_ids.product_id', 'purchase_order_ids')
     def _compute_aktual_material(self):
+        AccountMoveLine = self.env['account.move.line']
         for rec in self:
-            rec.aktual_material = rec.material_total_rab + rec.material_add_total_rab
+            material_product_ids = rec.material_master_ids.product_id.ids
+            if not material_product_ids or not rec.purchase_order_ids:
+                rec.aktual_material = 0.0
+                continue
 
-    @api.depends('equipment_total_rab', 'equipment_add_total_rab')
+            bill_lines = AccountMoveLine.search([
+                ('move_id.move_type', '=', 'in_invoice'),
+                ('move_id.state', '=', 'posted'),
+                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('product_id', 'in', material_product_ids),
+            ])
+            rec.aktual_material = sum(bill_lines.mapped('price_subtotal'))
+
+    @api.depends('equipment_master_ids.product_id', 'purchase_order_ids')
     def _compute_aktual_equipment(self):
+        AccountMoveLine = self.env['account.move.line']
         for rec in self:
-            rec.aktual_equipment = rec.equipment_total_rab + rec.equipment_add_total_rab
+            equipment_product_ids = rec.equipment_master_ids.product_id.ids
+            if not equipment_product_ids or not rec.purchase_order_ids:
+                rec.aktual_equipment = 0.0
+                continue
 
-    def _compute_aktual_kawat_las(self):
-        for rec in self:
-            total = sum(rec.issue_ids.filtered(lambda i: i.state == 'done').mapped('issue_line_ids').filtered(lambda l: l.product_id.is_consumable_project).mapped('qty_issued_weight'))
-            rec.aktual_kawat_las = total
-            rec._compute_aktual_total()
-    
-    def _compute_aktual_by_category(self):
-        for rec in self:
-            # category -> total_amount from vendor bills
-            categories = ['manpower', 'operasional', 'mobdemob', 'oksigen', 'lpg']
-            for cat in categories:
-                po_lines = self.env['account.move.line'].search([
-                    ('purchase_line_id.order_id.project_id', '=', rec.id),
-                    ('product_id.category_project', '=', cat),
-                    ('move_id.state', '=', 'posted'),
-                ])
-                setattr(rec, 'aktual_' + cat, sum(po_lines.mapped('price_subtotal')))
-
-    def action_recompute_aktual(self):
-        self.ensure_one()
-        self._compute_aktual_material()
-        self._compute_aktual_equipment()
-        self._compute_aktual_kawat_las()
-        self._compute_aktual_by_category()
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Selesai',
-                'message': 'Aktual Material dan Equipment berhasil dihitung ulang.',
-                'type': 'success',
-                'sticky': False,
-            },
-        }
+            bill_lines = AccountMoveLine.search([
+                ('move_id.move_type', '=', 'in_invoice'),
+                ('move_id.state', '=', 'posted'),
+                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('product_id', 'in', equipment_product_ids),
+            ])
+            rec.aktual_equipment = sum(bill_lines.mapped('price_subtotal'))
 
     @api.depends('aktual_material', 'aktual_equipment', 'aktual_manpower',
                  'aktual_operasional', 'aktual_mobdemob', 'aktual_kawat_las',
@@ -165,6 +160,79 @@ class ProjectProject(models.Model):
                 rec.variance_aktual_pct = (rec.variance_aktual / rec.sub_total_summary) * 100
             else:
                 rec.variance_aktual_pct = 0.0
+
+    @api.depends('kawat_las_product_id', 'rewelding_product_id', 'purchase_order_ids')
+    def _compute_aktual_kawat_las(self):
+        AccountMoveLine = self.env['account.move.line']
+        for rec in self:
+            product_ids = list(filter(None, [
+                rec.kawat_las_product_id.id,
+                rec.rewelding_product_id.id,
+            ]))
+            if not product_ids or not rec.purchase_order_ids:
+                rec.aktual_kawat_las = 0.0
+                continue
+
+            bill_lines = AccountMoveLine.search([
+                ('move_id.move_type', '=', 'in_invoice'),
+                ('move_id.state', '=', 'posted'),
+                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('product_id', 'in', product_ids),
+            ])
+            rec.aktual_kawat_las = sum(bill_lines.mapped('price_subtotal'))
+
+    @api.depends('purchase_order_ids')
+    def _compute_aktual_by_category(self):
+        AccountMoveLine = self.env['account.move.line']
+        for rec in self:
+            if not rec.purchase_order_ids:
+                rec.aktual_oksigen = 0.0
+                rec.aktual_lpg = 0.0
+                continue
+
+            bill_lines = AccountMoveLine.search([
+                ('move_id.move_type', '=', 'in_invoice'),
+                ('move_id.state', '=', 'posted'),
+                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('product_id.category_project', 'in', ['manpower', 'operasional', 'mobdemob', 'oksigen', 'lpg']),
+            ])
+            rec.aktual_manpower = sum(
+                l.price_subtotal for l in bill_lines
+                if l.product_id.category_project == 'manpower'
+            )
+            rec.aktual_operasional = sum(
+                l.price_subtotal for l in bill_lines
+                if l.product_id.category_project == 'operasional'
+            )
+            rec.aktual_mobdemob = sum(
+                l.price_subtotal for l in bill_lines
+                if l.product_id.category_project == 'mobdemob'
+            )
+            rec.aktual_oksigen = sum(
+                l.price_subtotal for l in bill_lines
+                if l.product_id.category_project == 'oksigen'
+            )
+            rec.aktual_lpg = sum(
+                l.price_subtotal for l in bill_lines
+                if l.product_id.category_project == 'lpg'
+            )
+
+    def action_recompute_aktual(self):
+        self.ensure_one()
+        self._compute_aktual_material()
+        self._compute_aktual_equipment()
+        self._compute_aktual_kawat_las()
+        self._compute_aktual_by_category()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Selesai',
+                'message': 'Aktual Material dan Equipment berhasil dihitung ulang.',
+                'type': 'success',
+                'sticky': False,
+            },
+        }
 
     @api.depends('so_ditagihkan', 'sub_total_aktual')
     def _compute_margin_aktual(self):

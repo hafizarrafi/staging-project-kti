@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+    <odoo>
+    
 
     <record id="view_project_project_form_inherit_rab" model="ir.ui.view">
         <field name="name">project.project.form.inherit.rab</field>
@@ -53,7 +54,7 @@
                 <field name="rab_id" readonly="1" invisible="not can_access_rab"/>
                 <field name="rab_id" readonly="1" options="{'no_open': True}" invisible="can_access_rab"/>
                 
-                <!-- Untuk yang berhak akses so -->
+                <!-- Suntuk yang berhak akses so -->
                 <field name="sale_order_id" readonly="1" invisible="not can_access_so"/>
                 <field name="sale_order_id" readonly="1" options="{'no_open': True}" invisible="can_access_so"/>
             </xpath>
@@ -138,7 +139,7 @@
                         </group>
                     </group>
 
-                    <!-- Total perhitungan ringkasan -->
+                    <!-- tak pindah kesini total calc nya -->
                     <group string="Total Perhitungan">
                         <group>
                             <field name="total_panjang_las" readonly="1"/>
@@ -266,16 +267,6 @@
                         </group>
                     </group>
                 </page>
-                <page string="Purchase Orders" name="purchase_orders">
-                    <field name="purchase_order_ids" nolabel="1">
-                        <list>
-                            <field name="name"/>
-                            <field name="partner_id"/>
-                            <field name="amount_total"/>
-                            <field name="state"/>
-                        </list>
-                    </field>
-                </page>
                 <page string="Material Proyek" name="material_project">
                         <button
                             name="action_sync_project_material"
@@ -316,20 +307,6 @@
                         <field name="material_add_total_estimasi" string="Total Estimasi (Add)" widget="monetary" class="oe_subtotal_footer_separator"/>
                     </group>
                 </page>
-                
-                <page string="Material Requirement" name="material_requirement">
-                    <header>
-                        <button name="action_open_issue_wizard" string="Generate Material Issue" type="object" class="btn-primary"/>
-                    </header>
-                    <field name="material_master_ids" mode="list" readonly="1">
-                        <list>
-                            <field name="product_id"/>
-                            <field name="total_weight" string="Required (kg)"/>
-                            <field name="total_qty" string="Required (unit)"/>
-                            <field name="uom_id"/>
-                        </list>
-                    </field>
-                </page>
             </xpath>
 
             <xpath expr="//div[@name='button_box']" position="inside">
@@ -337,8 +314,6 @@
                     icon="fa-list-alt" invisible="all_rab_count == 0">
                     <field string="Daftar RAB" name="all_rab_count" widget="statinfo"/>
                 </button>
-                <button class="oe_stat_button" type="object" name="action_view_stock_management"
-                    icon="fa-archive" string="Stock Management"/>
             </xpath>
 
            <xpath expr="//page[@name='material_project']" position="after">

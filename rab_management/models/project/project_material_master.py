@@ -1,4 +1,3 @@
-import math
 from odoo import models, fields, api
 
 class ProjectMaterialMaster(models.Model):
@@ -52,6 +51,7 @@ class ProjectMaterialMaster(models.Model):
 
     @api.depends('total_weight', 'product_weight')
     def _compute_total_qty(self):
+        import math
         for rec in self:
             if rec.total_weight and rec.product_weight:
                 rec.total_qty = math.ceil(rec.total_weight / rec.product_weight)

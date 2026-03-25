@@ -61,6 +61,7 @@ class ProjectTask(models.Model):
             self.job_type = self.parent_id.job_type
 
 
+
     panjang = fields.Float(string='Panjang', digits=(16, 2))
     lebar = fields.Float(string='Lebar', digits=(16, 2))
     tebal = fields.Float(string='Tebal', digits=(16, 2))
@@ -111,6 +112,7 @@ class ProjectTask(models.Model):
             current = current.parent_id
         return '/'.join(reversed(parts))
 
+
     # LOGIC WEIGHT
     @api.depends(
         'product_id',
@@ -146,6 +148,8 @@ class ProjectTask(models.Model):
             # Fallback jika rumus di atas menghasilkan 0 atau tidak terpenuhi (untuk item non-dimensi)
             if not rec.weight and rec.product_id.weight:
                 rec.weight = rec.product_id.weight * qty
+
+
     # LOGIC PANJANG LAS
     @api.depends('product_id', 'panjang', 'lebar', 'qty')
     def _compute_panjang_las(self):
@@ -230,6 +234,7 @@ class ProjectTask(models.Model):
                 level + 1,
                 material_map
             )
+
 
     @api.model
     def create(self, vals):
@@ -339,3 +344,9 @@ class ProjectTask(models.Model):
                 'next': {'type': 'ir.actions.client', 'tag': 'reload'},
             }
         }
+
+
+
+
+
+

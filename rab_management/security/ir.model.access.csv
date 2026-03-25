@@ -20,10 +20,3 @@ access_budget_estimate_user,budget.estimate user,model_budget_estimate,base.grou
 access_budget_estimate_manager,budget.estimate manager,model_budget_estimate,account.group_account_manager,1,1,1,1
 access_budget_transaction_user,budget.transaction user,model_budget_transaction,base.group_user,1,0,0,0
 access_budget_transaction_manager,budget.transaction manager,model_budget_transaction,account.group_account_manager,1,1,1,1
-access_project_stock_onsite_wizard,project.stock.onsite.wizard,model_project_stock_onsite_wizard,stock.group_stock_user,1,1,1,1
-access_project_stock_onsite_line,project.stock.onsite.line,model_project_stock_onsite_line,stock.group_stock_user,1,1,1,1
-access_project_material_issue,project.material.issue,model_project_material_issue,base.group_user,1,1,1,1
-access_project_material_issue_line,project.material.issue.line,model_project_material_issue_line,base.group_user,1,1,1,1
-access_project_material_consumption,project.material.consumption,model_project_material_consumption,base.group_user,1,1,1,1
-access_project_material_consumption_line,project.material.consumption.line,model_project_material_consumption_line,base.group_user,1,1,1,1
-access_project_material_consumption_summary,project.material.consumption.summary,model_project_material_consumption_summary,base.group_user,1,1,1,1

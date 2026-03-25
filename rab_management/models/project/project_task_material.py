@@ -75,8 +75,8 @@ class ProjectTaskMaterial(models.Model):
 
     @api.depends('total_qty', 'qty_on_site')
     def _compute_qty_beli(self):
-        for rec in self:
-            rec.qty_beli = max(
-                (rec.total_qty or 0.0) - (rec.qty_on_site or 0.0),
-                0.0
-            )
+            for rec in self:
+                rec.qty_beli = max(
+                    (rec.total_qty or 0.0) - (rec.qty_on_site or 0.0),
+                    0.0
+                )
