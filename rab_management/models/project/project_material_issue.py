@@ -65,3 +65,13 @@ class ProjectMaterialIssueLine(models.Model):
     qty_required_kg = fields.Float(string='Orig. Req (kg)', digits=(16, 2))
     qty_issue_unit = fields.Float(string='Issued (unit)', digits='Product Unit of Measure')
     qty_issued_weight = fields.Float(string='Weight Issued (kg)', digits=(16, 2))
+
+
+class ProjectProject(models.Model):
+    _inherit = 'project.project'
+
+    issue_ids = fields.One2many(
+        'project.material.issue',
+        'project_id',
+        string='Material Issue Logs'
+    )
