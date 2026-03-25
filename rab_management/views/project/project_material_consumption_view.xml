@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_project_material_consumption_tree" model="ir.ui.view">
+        <field name="name">project.material.consumption.list</field>
+        <field name="model">project.material.consumption</field>
+        <field name="arch" type="xml">
+            <list string="Material Consumption Dashboards">
+                <field name="project_id"/>
+                <field name="date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_project_material_consumption_form" model="ir.ui.view">
+        <field name="name">project.material.consumption.form</field>
+        <field name="model">project.material.consumption</field>
+        <field name="arch" type="xml">
+            <form string="Stock Management">
+                <header>
+                    <button name="action_view_project" string="Back to Project" type="object" class="btn-secondary" icon="fa-arrow-left"/>
+                    <button name="action_refresh_requirements" string="Refresh Requirements" type="object" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="project_id" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Informasi Project">
+                            <field name="date"/>
+                            <field name="display_stock_location" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Inventory" name="inventory">
+                            <field name="stock_quant_ids" readonly="1">
+                                <list string="Project Inventory">
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="product_uom_id" string="UoM"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Consumption" name="lines">
+                            <!-- 1. ACTION BUTTONS (TOP) -->
+                            <div class="d-flex flex-wrap gap-2 mb-3 mt-2">
+                                <button name="action_calculate_summary" string="Kalkulasi Pilihan" type="object" 
+                                        class="btn-primary" style="min-width: 200px;"/>
+                                <button name="action_generate_picking" string="Generate Delivery Order (DO)" type="object" 
+                                        class="btn-success" style="min-width: 200px;"
+                                        confirm="Konfirmasi pembuatan DO untuk item di atas?"/>
+                            </div>
+
+                            <!-- 2. TOP TABLE: AGGREGATED SUMMARY -->
+                            <separator string="1. Item yang Akan Diterbitkan (Agregat)"/>
+                            <field name="summary_ids">
+                                <list string="Aggregated DO List" editable="bottom" create="0" delete="0">
+                                    <field name="is_readonly" column_invisible="True"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="total_weight_kg" string="Total Berat (kg)" readonly="1"/>
+                                    <field name="qty_available" readonly="1" string="Stock Site"/>
+                                    <field name="total_qty_unit" string="Qty Dibutuhkan" readonly="1"/>
+                                    <field name="qty_to_issue_unit" string="Qty Terbit" class="font-weight-bold" 
+                                           readonly="is_readonly"/>
+                                    <!-- BUTTON -->
+                                    <button name="action_remove_summary" type="object" icon="fa-trash" title="Hapus" 
+                                            class="text-danger" width="40px" style="max-width: 100px;"/>
+                                </list>
+                            </field>
+
+                            <!-- 3. SOURCE FILTER BUTTONS (LEFT ALIGNED) -->
+                            <separator string="2. Pilih Sumber Kebutuhan"/>
+                            <field name="search_source_type" invisible="True"/>
+                            <div class="d-flex flex-wrap gap-2 mb-3 mt-2">
+                                <button name="action_filter_task_primary" string="Pekerjaan Utama" type="object" 
+                                        class="btn-primary"
+                                        invisible="search_source_type != 'task_primary'"/>
+                                <button name="action_filter_task_primary" string="Pekerjaan Utama" type="object" 
+                                        class="btn-outline-primary"
+                                        invisible="search_source_type == 'task_primary'"/>
+
+                                <!-- PEKERJAAN ADDITIONAL -->
+                                <button name="action_filter_task_additional" string="Pekerjaan Additional" type="object" 
+                                        class="btn-primary"
+                                        invisible="search_source_type != 'task_additional'"/>
+                                <button name="action_filter_task_additional" string="Pekerjaan Additional" type="object" 
+                                        class="btn-outline-primary"
+                                        invisible="search_source_type == 'task_additional'"/>
+
+                                <!-- ADDITIONAL MATERIAL -->
+                                <button name="action_filter_additional_material" string="Additional Material" type="object" 
+                                        class="btn-primary"
+                                        invisible="search_source_type != 'additional'"/>
+                                <button name="action_filter_additional_material" string="Additional Material" type="object" 
+                                        class="btn-outline-primary"
+                                        invisible="search_source_type == 'additional'"/>
+
+                                <!-- EQUIPMENT -->
+                                <button name="action_filter_equipment_primary" string="Equipment" type="object" 
+                                        class="btn-primary"
+                                        invisible="search_source_type != 'equipment_primary'"/>
+                                <button name="action_filter_equipment_primary" string="Equipment" type="object" 
+                                        class="btn-outline-primary"
+                                        invisible="search_source_type == 'equipment_primary'"/>
+
+                                <!-- EQUIPMENT ADDITIONAL -->
+                                <button name="action_filter_equipment_additional" string="Equipment Additional" type="object" 
+                                        class="btn-primary"
+                                        invisible="search_source_type != 'equipment_additional'"/>
+                                <button name="action_filter_equipment_additional" string="Equipment Additional" type="object" 
+                                        class="btn-outline-primary"
+                                        invisible="search_source_type == 'equipment_additional'"/>
+                            </div>
+
+                            <!-- 4. SEARCH SECTION (BELOW BUTTONS) -->
+                            <group string="Pencarian &amp; Detail Filter" class="mt-0">
+                                <group>
+                                    <field name="search_product_id" options="{'no_create': True}" placeholder="Pilih Produk..."/>
+                                    <field name="search_task_id" options="{'no_create': True}" domain="[('project_id','=',project_id)]" placeholder="Pilih Task..."
+                                           invisible="search_source_type not in ['task_primary', 'task_additional']"/>
+                                </group>
+                                <group>
+                                    <button name="action_refresh_requirements" string="Refresh Data" type="object" 
+                                            class="btn-primary" icon="fa-refresh"/>
+                                </group>
+                            </group>
+
+                            <!-- 5. BOTTOM TABLE: INDIVIDUAL REQUIREMENTS -->
+                            <separator string="3. Daftar Kebutuhan"/>
+                            <field name="line_ids" domain="[('source_type', '=', search_source_type)]">
+                                <list create="0" delete="0" default_order="sort_order asc, id asc"
+                                      decoration-muted="not is_selectable"
+                                      decoration-warning="is_partially_issued">
+                                    <field name="sort_order" column_invisible="True"/>
+                                    <field name="is_fully_issued" column_invisible="True"/>
+                                    <field name="is_partially_issued" column_invisible="True"/>
+                                    <field name="is_selectable" column_invisible="True"/>
+                                    <field name="source_type" column_invisible="True"/>
+                                    <field name="is_selected" column_invisible="True"/>
+                                    
+                                    <field name="parent_task_display_id" readonly="1" string="Pekerjaan Utama" force_save="1"
+                                           column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
+                                    
+                                    <field name="subtask_display_name" readonly="1" string="Detail/Sub-pekerjaan" force_save="1"/>
+                                    
+                                    <!-- REQUIRED FIELDS FOR SAVE: Use force_save since they are readonly -->
+                                    <field name="product_id" readonly="1" force_save="1"/>
+                                    <field name="task_id" invisible="True" force_save="1"/>
+                                    <field name="additional_purchase_id" invisible="True" force_save="1"/>
+                                    <field name="equipment_master_id" invisible="True" force_save="1"/>
+                                    
+                                    <field name="qty_required_kg" readonly="1" string="Butuh (kg)" force_save="1"
+                                           column_invisible="parent.search_source_type not in ['task_primary', 'task_additional']"/>
+                                    
+                                    <field name="qty_required_unit" readonly="1" string="Butuh (unit)" force_save="1"
+                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
+                                    <field name="qty_issued_unit" readonly="1" string="Terbit"
+                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
+                                    <field name="qty_remaining_unit" readonly="1" string="Sisa" class="font-weight-bold"
+                                           column_invisible="parent.search_source_type in ['task_primary', 'task_additional']"/>
+                                    <field name="qty_available" readonly="1" string="Stok site"/>
+                                    <field name="product_uom_id" readonly="1" string="Satuan"/>
+                                    
+
+
+                                    <button name="action_select_line"
+                                            type="object"
+                                            string="Pilih"
+                                            class="btn-primary btn-sm"
+                                            invisible="is_selected or not is_selectable"
+                                            style="width:90px"/>
+
+                                    <button name="action_deselect_line"
+                                            type="object"
+                                            string="Batal"
+                                            class="btn-secondary btn-sm"
+                                            invisible="not is_selected or not is_selectable"
+                                            style="width:90px"/>
+
+                                    <button name="action_select_line"
+                                            type="object"
+                                            string="Sudah Terbit"
+                                            class="btn-light btn-sm text-muted"
+                                            readonly="1"
+                                            invisible="is_selectable"
+                                            style="width:90px"/>
+
+                                    <!-- <button name="action_select_line" string="Aksi" label="Pilih" type="object" 
+                                            class="btn-primary" invisible="is_selected or not is_selectable"
+                                            width="40px"/>
+                                    <button name="action_deselect_line" string="Aksi" label="Batal Pilih" type="object" 
+                                            class="btn-secondary" invisible="not is_selected or not is_selectable"
+                                            width="40px"/>
+                                    
+                                    <field name="selection_status" string="Aksi" readonly="1" 
+                                           invisible="is_selectable" decoration-secondary="1" widget="badge"
+                                           width="40px"/> -->
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Issue Logs" name="issue_logs">
+                            <field name="issue_ids" readonly="1">
+                                <list string="Material Issue Logs">
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="picking_id"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'confirmed'" decoration-danger="state == 'cancel'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_project_material_consumption" model="ir.actions.act_window">
+        <field name="name">Stock Management</field>
+        <field name="res_model">project.material.consumption</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

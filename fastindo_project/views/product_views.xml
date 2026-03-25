@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product Template Form View Extension -->
+    <record id="product_template_form_view_inherit_fastindo" model="ir.ui.view">
+        <field name="name">product.template.form.view.inherit.fastindo</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Move Technical Specification to a new page -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Specification" name="product_specification">
+                    <group>
+                        <group string="Technical Specs">
+                            <field name="x_standardization_id" options="{'no_create_edit': False, 'no_quick_create': False}"/>
+                            <field name="x_material_id" options="{'no_create_edit': False, 'no_quick_create': False}"/>
+                            <field name="x_grade"/>
+                            <field name="x_finishing_id" options="{'no_create_edit': False, 'no_quick_create': False}"/>
+                        </group>
+                        <group string="Documents">
+                            <field name="x_certificate" filename="x_certificate_name"/>
+                            <field name="x_certificate_name" invisible="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+            <!-- Add Alternative UoM table to General Information page -->
+            <xpath expr="//page[@name='general_information']" position="inside">
+                <group string="Alternative UoM &amp; Conversions" name="alternative_uom_group">
+                    <div class="alert alert-info" role="alert" colspan="2">
+                        <strong>Panduan Pengisian:</strong><br/>
+                        1. Pilih <strong>Satuan Alternatif</strong> (misal: Pack atau Box).<br/>
+                        2. Isi <strong>Faktor Konversi</strong> dengan jumlah satuan dasar yang ada di dalam 1 satuan alternatif tersebut.<br/>
+                           <em>Contoh: Jika 1 Pack berisi 10 Pcs (satuan dasar), maka isi <strong>10</strong>.</em><br/>
+                        3. (Opsional) Isi <strong>Harga</strong> jika satuan ini memiliki harga jual/beli khusus per satuan alternatif.
+                    </div>
+                    <field name="uom_factor_ids" nolabel="1" colspan="2">
+                        <list editable="bottom">
+                            <field name="uom_id"/>
+                            <field name="conversion_factor"/>
+                            <field name="price"/>
+                            <field name="qty_available_alt_uom" readonly="0"/>
+                            <field name="notes"/>
+                            <button name="display_conversion" type="object" icon="fa-info-circle" title="View conversion ratio"/>
+                        </list>
+                    </field>
+                    <field name="qty_alt_html" string="UoM Availability Summary" readonly="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

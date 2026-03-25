@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="rab_management.VendorMatrix">
+
+  <t t-if="state.loading">
+    <div class="p-3 text-muted">Loading...</div>
+  </t>
+
+  <t t-if="!state.loading">
+
+    <div class="vendor-matrix-wrapper">
+      <div class="vendor-matrix">
+
+        <!-- ================= HEADER (TIDAK IKUT SCROLL Y) ================= -->
+        <div class="matrix-header">
+
+          <!-- HEADER LEFT -->
+          <div class="matrix-header-left">
+            <table class="rab-vendor-table table table-sm align-middle">
+              <tbody>
+                <tr>
+                  <td class="item-col">Item</td>
+                  <td class="qty-col text-center">Qty</td>
+                </tr>
+                <tr>
+                  <td class="item-col"></td>
+                  <td class="qty-col"></td>
+
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- HEADER RIGHT (SCROLL X, NANTI DISYNC JS) -->
+          <div class="matrix-right-scroll">
+            <div class="matrix-header-right">
+              <table class="rab-vendor-table table table-sm align-middle">
+                <tbody>
+                  <tr>
+                    <t t-foreach="state.vendors" t-as="vendor" t-key="vendor.id">
+                      <td colspan="4" class="vendor-col text-center">
+                        <t t-esc="vendor.name"/>
+                      </td>
+                    </t>
+                  </tr>
+                  <tr>
+                    <t t-foreach="state.vendors" t-as="vendor" t-key="vendor.id">
+                      <td class="price-col text-center">Quotation</td>
+                      <td class="price-col text-center">Last Purchase</td>
+                      <td class="price-col text-center">Harga Nego</td>
+                      <td class="action-col text-center">Pilih</td>
+                    </t>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+        <!-- ================= END HEADER ================= -->
+
+
+        <!-- ================= BODY WRAPPER (SATU-SATUNYA SCROLL Y) ================= -->
+        <div class="matrix-body-wrapper">
+
+          <div class="matrix-body">
+
+            <!-- BODY LEFT -->
+            <div class="matrix-body-left">
+              <table class="rab-vendor-table table table-sm align-middle">
+                <tbody>
+                  <t t-foreach="state.items" t-as="item" t-key="item.id">
+                    <tr>
+                      <td class="item-col">
+                        <span class="item-text" t-att-title="item.name">
+                          <t t-esc="item.name"/>
+                        </span>
+                      </td>
+
+                      <td class="qty-col text-center">
+                        <input type="number" min="0" class="form-control form-control-sm text-center" t-att-value="item.qty" t-att-data-id="item.id" t-on-change="onChangeQty"/>
+                      </td>
+                    </tr>
+                  </t>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- BODY RIGHT (SCROLL X, NANTI DISYNC JS) -->
+            <div class="matrix-right-scroll">
+              <div class="matrix-body-right">
+                <table class="rab-vendor-table table table-sm align-middle">
+                  <tbody>
+                    <t t-foreach="state.items" t-as="item" t-key="item.id">
+                      <tr>
+
+                        <t t-foreach="state.vendors" t-as="vendor" t-key="vendor.id">
+                          <t t-set="priceLine" t-value="item.prices[vendor.id]"/>
+
+                          <!-- ================= QUOTATION ================= -->
+                          <td class="price-col vendor-start text-end" t-att-class="priceLine and priceLine.vendor_state == 'final' ? 'vendor-final' : ''">
+
+                            <input t-if="priceLine and priceLine.vendor_state == 'draft'" type="number" min="0" class="form-control form-control-sm text-end" t-att-value="priceLine.base" t-att-data-id="priceLine.id" t-on-change="onChangeBasePrice"/>
+
+                            <t t-if="!priceLine or priceLine.vendor_state != 'draft'">
+                              <t t-esc="formatPrice(priceLine and priceLine.base)"/>
+                            </t>
+                          </td>
+
+                          <!-- ================= LAST PURCHASE ================= -->
+                          <td class="price-col text-end" t-att-class="priceLine and priceLine.vendor_state == 'final' ? 'vendor-final' : ''">
+                            <span class="readonly-price">
+                              <t t-esc="formatPrice(priceLine and priceLine.lastPurchase)"/>
+                            </span>
+                          </td>
+
+                          <!-- ================= HARGA NEGO ================= -->
+                          <td class="price-col price-nego text-end" t-att-class="
+                                (priceLine and priceLine.isDimmed ? 'vendor-dimmed ' : '') +
+                                (priceLine and priceLine.vendor_state == 'final' ? 'vendor-final' : '')
+                              ">
+
+                            <div t-if="priceLine and priceLine.vendor_state == 'negotiation'" t-att-class="'nego-input-wrapper ' + (priceLine.isBest ? 'best' : '')">
+
+                              <input type="number" min="0" class="form-control form-control-sm text-end" t-att-value="priceLine.nego" t-att-data-id="priceLine.id" t-att-data-base-price="priceLine.base" t-on-change="onChangeNegotiationPrice"/>
+
+                              <span t-if="priceLine.isBest" class="best-badge">BEST</span>
+                            </div>
+
+                            <t t-if="priceLine and priceLine.vendor_state == 'final'">
+                              <div class="final-price-box">
+                                <span class="final-price-text">
+                                  <t t-esc="formatPrice(priceLine.nego)"/>
+                                </span>
+                              </div>
+                            </t>
+
+                            <t t-if="priceLine and priceLine.vendor_state == 'cancelled'">
+                              <div class="final-box cancelled-box">
+                                <span class="price-text">
+                                  <t t-esc="formatPrice(priceLine.nego)"/>
+                                </span>
+                              </div>
+                            </t>
+
+                            <t t-if="!priceLine or priceLine.vendor_state == 'draft'">-</t>
+                          </td>
+
+                          <!-- ================= PILIH ================= -->
+                          <td class="action-col text-center" t-att-class="
+                                (priceLine and priceLine.isDimmed ? 'vendor-dimmed ' : '') +
+                                (priceLine and priceLine.vendor_state == 'final' ? 'vendor-final' : '')
+                              ">
+
+                            <t t-if="!priceLine">
+                              <button class="btn btn-sm btn-outline-secondary" t-att-data-line-id="item.id" t-att-data-vendor-id="vendor.id" t-on-click="onAddVendorLine">
+                                + Tambah
+                              </button>
+                            </t>
+
+                            <button t-if="priceLine and priceLine.vendor_state == 'draft'" class="btn btn-sm btn-outline-primary" t-att-data-id="priceLine.id" t-on-click="onSetNegotiation">
+                              Mulai Nego
+                            </button>
+
+                            <button t-if="priceLine and priceLine.vendor_state == 'negotiation'" class="btn btn-sm btn-success" t-att-data-id="priceLine.id" t-on-click="onSelectVendor">
+                              Pilih
+                            </button>
+
+                            <t t-if="priceLine and priceLine.vendor_state == 'final'">
+                              <div class="final-box">
+                                <span class="final-badge">Terpilih</span>
+                                <button class="btn btn-xs btn-outline-danger final-reset-btn" t-att-data-id="priceLine.id" t-on-click="onResetFinal">
+                                  Reset
+                                </button>
+                              </div>
+                            </t>
+
+                            <t t-if="priceLine and priceLine.vendor_state == 'cancelled'">
+                              <div class="final-box cancelled-box">
+                                <span class="badge-not-selected">
+                                  Tidak Terpilih
+                                </span>
+                              </div>
+                            </t>
+                          </td>
+                        </t>
+                      </tr>
+                    </t>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="matrix-footer mt-3">
+          <div class="product-autocomplete">
+
+              <input type="text" class="form-control form-control-sm" placeholder="Tambah produk..." t-att-value="state.newProduct.query" t-on-input="onSearchProduct" t-on-keydown="onProductKeydown"/>
+
+
+              <t t-if="state.newProduct.open">
+                <div class="dropdown-menu show" t-att-style="state.newProduct.dropdownStyle">
+                    <t t-foreach="state.newProduct.results" t-as="prod" t-key="prod[0]" t-foreach-index="i">
+
+                        <div t-att-class="'dropdown-item ' + (state.newProduct.highlightedIndex === i ? 'active' : '')" t-on-click="() => this.onSelectProduct(prod[0])">
+                            <t t-esc="prod[1]"/>
+                        </div>
+
+
+
+                    </t>
+
+                    <t t-if="!state.newProduct.results.length">
+                        <div class="dropdown-item text-muted">
+                            Tidak ditemukan
+                        </div>
+                    </t>
+                </div>
+            </t>
+
+
+          </div>
+      </div>
+
+
+        <!-- ================= END BODY ================= -->
+
+      </div>
+    </div>
+  </t>
+
+</t>
+</templates>

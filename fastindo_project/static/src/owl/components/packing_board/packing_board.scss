@@ -1,0 +1,192 @@
+// Smart Picking OWL Board SCSS
+// Avoids hardcoded colors to respect Odoo's dark/light themes.
+
+// Widget wrapper must be full-width so the grid can expand
+.fp-packing-board-field {
+    width: 100%;
+    display: block;
+}
+
+.fp-packing-board {
+    width: 100%;
+    position: relative;
+}
+
+/* ── Boxes grid ────────────────────────────────────── */
+.fp-boxes-grid {
+    width: 100% !important;
+    display: grid !important;
+    // High-priority grid: try to fit as many 320px columns as possible
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    gap: 16px;
+    align-items: start;
+}
+
+/* ── Box card ──────────────────────────────────────── */
+.fp-box-card {
+    transition: box-shadow 0.15s, outline 0.1s;
+    min-width: 0; // prevent grid blowout
+
+    &.status-over {
+        border-left: 3px solid var(--bs-indigo, #e63333);
+    }
+
+    &.status-full {
+        border-left: 3px solid var(--bs-success, #2ecc71);
+    }
+
+    &.status-acceptable {
+        border-left: 3px solid var(--bs-warning, #f39c12);
+    }
+
+    &.status-under {
+        border-left: 3px solid var(--bs-danger, #b0b0b0);
+    }
+
+    // Drop-target highlight — set via direct DOM classList in JS (non-reactive)
+    &.is-drop-target {
+        outline: 2px dashed var(--bs-primary, #0d6efd);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+    }
+}
+
+/* ── Add Box card ───────────────────────────────────── */
+.fp-add-box-card {
+    border: 2px dashed rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.3) !important;
+    background: rgba(var(--bs-secondary-rgb, 108, 117, 125), 0.03);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 120px;
+
+    &:hover {
+        border-color: var(--bs-primary, #0d6efd) !important;
+        background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.05);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+        .fa-plus-circle {
+            color: var(--bs-primary, #0d6efd);
+        }
+    }
+
+    .fa-plus-circle {
+        transition: color 0.2s ease;
+    }
+}
+
+/* ── Remove Package Button ────────────────────────── */
+.fp-remove-pkg-btn {
+    opacity: 0.2;
+    transition: opacity 0.15s, color 0.15s;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--bs-danger, #dc3545);
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+/* ── Item rows ─────────────────────────────────────── */
+.fp-item-row {
+    cursor: grab;
+    transition: background-color 0.1s;
+    user-select: none;
+
+    &:last-child {
+        border-bottom: none !important;
+    }
+
+    &:hover {
+        background-color: var(--o-list-row-highlighted-bg, rgba(0, 0, 0, 0.04));
+    }
+
+    &.is-dragging {
+        opacity: 0.45;
+        cursor: grabbing;
+    }
+
+    .fp-item-name {
+        min-width: 0; // allow text-truncate to work in flex
+    }
+}
+
+/* ── Scissors button ───────────────────────────────── */
+.fp-split-btn {
+    flex-shrink: 0;
+    opacity: 0.3;
+    line-height: 1;
+    color: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    background: none;
+    border: none;
+
+    &:hover {
+        opacity: 1;
+        color: var(--bs-primary, #0d6efd);
+    }
+}
+
+/* ── Staged item area (after split) ────────────────── */
+.fp-staged-area {
+    border: 1px solid rgba(var(--bs-warning-rgb, 255, 193, 7), 0.3) !important;
+    color: inherit !important;
+}
+
+.fp-staged-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--bs-warning-border-subtle, rgba(255, 193, 7, 0.4));
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: grab;
+    font-size: 0.87em;
+    font-weight: 500;
+    white-space: nowrap;
+
+    &:hover {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+
+    &.is-dragging {
+        opacity: 0.45;
+        cursor: grabbing;
+    }
+
+    .badge.bg-warning {
+        background-color: rgba(var(--bs-warning-rgb, 255, 193, 7), 0.7) !important;
+        color: #000 !important;
+    }
+}
+
+/* ── Split Dialog ──────────────────────────────────── */
+.fp-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1050;
+}
+
+.fp-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1060;
+    width: 320px;
+    max-width: 95vw;
+    touch-action: none; // Prevent scrolling while dragging
+
+    &.is-dragging {
+        opacity: 0.9;
+        transition: none; // Avoid lag
+    }
+
+    .card-header {
+        cursor: move;
+        user-select: none;
+    }
+}

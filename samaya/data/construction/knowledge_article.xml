@@ -1,0 +1,848 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<odoo>
+    <template id="welcome_article_body">
+        <h1>Construction</h1>
+        <p>Odoo empowers you to manage every aspect of your construction projects effortlessly and efficiently, and its integrated applications ensure unparalleled success and client satisfaction.</p>
+        <p>The construction industries come in two parts:</p>
+        <p><strong>Construction Builder</strong></p>
+        <p>A streamlined industry package for companies focused on <strong>simple jobs, rapid quoting, and efficient execution</strong>.</p>
+        <p>It covers essential quoting, basic project setup, straightforward planning, material coordination, and smooth on-site delivery.</p>
+        <p>Ideal for teams seeking operational efficiency without unnecessary complexity.</p>
+        <p><strong>Construction Developer</strong></p>
+        <p>A complete solution tailored for construction companies overseeing <strong>complex and multi-trade projects</strong>.</p>
+        <p>It delivers fine-tuned estimation tools, subcontractor management, advanced planning, materials forecasting, progress driven billing.</p>
+        <p>Perfect for companies needing structured workflows and high-precision project management.</p>
+        <p>The module comes of top of the Construction Builder setup providing additional capabilities. </p>
+        <div data-embedded="tableOfContent"/>
+        <h1>Basics</h1>
+        <hr />
+        <ul>
+            <li>
+                <p>
+                    <b>Project App</b>: Manage construction sites as projects, organizing tasks into stages like "Foundation,"
+                    "Framing," and "Finishing" with clear deadlines.
+                </p>
+            </li>
+            <li>
+                <p>
+                    <b>Timesheets App</b>: Track labor hours accurately with a mobile app that allows workers to log time
+                    against specific tasks or cost codes on-site.
+                </p>
+            </li>
+            <li>
+                <p>
+                    <b>Field Service App</b>: Schedule and dispatch specialized crews for specific interventions, tracking their
+                    location and job status in real-time.
+                </p>
+            </li>
+            <li>
+                <p>
+                    <b>Purchase App</b>: Automate the procurement of building materials, managing RFQs and purchase orders to
+                    ensure timely delivery to the site.
+                </p>
+            </li>
+            <li>
+                <p>
+                    <b>Inventory App</b>: Keep track of tools, equipment, and consumables across multiple sites or warehouses,
+                    reducing loss and theft.
+                </p>
+            </li>
+            <li>
+                <p>
+                    <b>Invoicing App</b>: Handle complex billing scenarios like milestone invoicing, down payments, and
+                    retention based on project progress.
+                </p>
+            </li>
+            <li>
+                <p>
+                    <b>Documents App</b>: Centralize blueprints, contracts, and permits, ensuring that the latest versions are
+                    always available to the team.
+                </p>
+            </li>
+            <li>
+                <p>
+                    <b>Fleet App</b>: Manage your heavy machinery and vehicle fleet, tracking maintenance schedules, fuel costs,
+                    and driver assignments.
+                </p>
+            </li>
+        </ul>
+        <p>
+             <br/>
+        </p>
+        <h1>Use case</h1>
+        <hr/>
+        <p>By uploading this module's demo data, your database has been filled with a few products,
+            sale orders and more.</p>
+        <p>You should be able to execute the following flows to have an overview of various flows
+            you can quickly execute with this package using Odoo.</p>
+        <p>Of course, this is just an overview of the features included in this package. Feel free
+            to add new apps, delete/modify demo data, and test everything around!</p>
+        <div data-oe-role="status"
+            class="o_editor_banner user-select-none lh-1 d-flex align-items-center alert alert-warning pb-0 pt-3 o-contenteditable-false"
+            contenteditable="false" role="status">
+            <i data-oe-aria-label="Banner Warning" class="o_editor_banner_icon mb-3 fst-normal"
+                aria-label="Banner Warning">⚠️</i>
+            <div class="w-100 px-3 o_editor_banner_content o-contenteditable-true"
+                contenteditable="true">
+                <p>You didn't import demo data? You can still do it. Go to Apps &gt; Industries &gt;
+                    Upgrade your package and check the related box</p>
+            </div>
+        </div>
+        <p>
+             <br/>
+        </p>
+        <h3>🎯 Never miss an opportunity</h3>
+        <hr/>
+        <p> The <strong>CRM module</strong> helps construction companies capture leads from multiple
+            sources, track communications, and schedule follow-ups.  <br/>You can prioritize
+            high-value opportunities and turn inquiries into profitable projects.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Leads &amp; Opportunities:</strong> Record incoming inquiries from
+                    emails, forms, or calls.</p>
+            </li>
+            <li>
+                <p><strong>Pipeline Management:</strong> Visualize lead stages and prioritize
+                    follow-ups.</p>
+            </li>
+            <li>
+                <p><strong>Chatter &amp; Communication:</strong> Collaborate internally using notes
+                    and messages linked to opportunities.</p>
+            </li>
+        </ul>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Success"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>Setup an email alias for your pipeline to automatically create new leads!</p>
+            </div>
+        </div>
+        <p>&#xFEFF;<a class="btn btn-fill-secondary"
+                href="https://www.odoo.com/documentation/latest/applications/sales/crm.html">&#xFEFF;🎓
+            CRM&#xFEFF;</a>&#xFEFF;</p>
+        <p>
+             <br/>
+        </p>
+        <h3>💲 Easily create beautiful quotations </h3>
+        <hr/>
+        <p>The <strong>Sales App</strong> enables rapid creation of professional quotations.
+            You can use product kits for materials, apply discounts, and send polished proposals
+            directly to clients.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Quotation Templates:</strong> Predefine templates for recurrent
+                    offers.</p>
+            </li>
+            <li>
+                <p><strong>Pricing &amp; Discounts:</strong> Adjust based on project size or client
+                    agreements.</p>
+            </li>
+            <li>
+                <p><strong>PDF Output:</strong> Send branded quotations for client approval.</p>
+            </li>
+            <li>
+                <p><strong>Online Approval:</strong> Enable online customer approval.</p>
+            </li>
+            <li>
+                <p><strong>Chatter &amp; Communication:</strong> Collaborate internally using notes
+                    and messages linked to opportunities.</p>
+            </li>
+        </ul>
+        <p>Once confirmed, the quotation becomes a sales order.</p>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Success"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>Save time by directly sending the quotation by email to your customer.  <br/>The
+                    personalized email provides:         </p>
+                <ul>
+                    <li>
+                        The quotation in PDF format
+                    </li>
+                    <li>
+                        A link to reach the online quotation from where the customer can confirm and
+                        sign it.</li>
+                </ul>
+                <div class="o-paragraph">If the customer replies to the email, the answer is
+                    automatically logged in the chatter on the right of the screen. Thereby, all the
+                    discussions regarding the quotation, its updates, and its fine tuning are
+                    attached, and the history
+                    can be easily consulted by all the involved users</div>
+            </div>
+        </div>
+        <div data-oe-role="status" data-oe-protected="true"
+            class="o_editor_banner lh-1 d-flex align-items-center alert alert-info pb-0 pt-3 o-contenteditable-false"
+            contenteditable="false" role="status">
+            <i data-oe-aria-label="Banner Info" class="o_editor_banner_icon mb-3 fst-normal"
+                aria-label="Banner Info">💡</i>
+            <div data-oe-protected="false"
+                class="w-100 px-3 o_editor_banner_content o-contenteditable-true"
+                contenteditable="true">
+                <p>
+                    If your country benefits from a tax rebate under certain conditions, you can
+                    easily apply it to your entire quotation by creating a fiscal position that will
+                    automatically replace the default tax rate by the reduced one
+                </p>
+                <p> &#xFEFF;<a class="btn btn-fill-secondary btn-sm"
+                        href="https://www.odoo.com/documentation/latest/applications/finance/accounting/taxes/fiscal_positions.html">&#xFEFF;🎓
+                    Fiscal Positions &#xFEFF;</a>&#xFEFF; </p>
+            </div>
+        </div>
+        <p>&#xFEFF;<a class="btn btn-fill-secondary"
+                href="https://www.odoo.com/documentation/latest/applications/sales/sales.html">&#xFEFF;🎓
+            Sales&#xFEFF;</a>&#xFEFF;</p>
+
+        <h5>🧮 Advanced quote computations with the calculator</h5>
+        <p>In some cases, you might look for more advanced computations to fine tune your quotes... <br/>We
+            got you covered here with the quote calculator!</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>Generate a new quotation and select the Renovation Project template.</li>
+            <li>Open the quote calculator from the smart buttons.</li>
+            <li>Assuming there will be manual labor behind every product from the quote, start
+                filling the time estimate for some of them. <br/>The total labor time and even time
+                for project management and purchases are computed accordingly...</li>
+            <li>Save the calculator and come back to your quote. <br/>The Labour &amp; Project
+                Follow-up section has been updated in consequence!</li>
+        </ul>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-info pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Info"
+                aria-label="Banner Info">💡</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <div class="o-paragraph">With Spreadsheet App under the hood, you have the freedom
+                    to confirgure quote calculators meeting your exact needs.</div>
+                <div class="o-paragraph">Read more about the quote calculator &#xFEFF;<a
+                        href="https://www.odoo.com/blog/business-hacks-1/odoos-quote-calculator-1643">
+                    &#xFEFF;here&#xFEFF;</a>&#xFEFF;.</div>
+            </div>
+        </div>
+        <h5>⚖️ Specify the contract type (Construction Developer)</h5>
+        <p>
+            Construction may not always go as planned and quotations may be built based on estimates. The question when it takes more time or consumes more material due to erroneous estimates is who owns the risk?<br/>
+            To help you with that, the construction industry comes with a contract type which helps you clarifying that upfront any issue, directly in your quote.
+        </p>
+        <p>
+            <strong>How to use it:</strong>
+            <ul>
+                <li>Create a new quotation / sale order, assign a customer and select a quotation template to save time.</li>
+                <li>Open the Other Info tab and in the Invoicing section, adjust the Contract Type per your needs.</li>
+                <li>When selecting Per Line, a new column is exposed for you to specify for each lines the contract type.</li>
+            </ul>
+        </p>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Success"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>This information reflects straight away in your quotations, whether send as pdf file or with a preview.</p>
+            </div>
+        </div>
+        <h5>✨ Change orders &amp; extras</h5>
+        <p>
+            Do your construction projects go always according to plan?
+            If not, here is how to handle change orders and extras.
+        </p>
+        <p>
+            <strong>How to use it:</strong>
+            <ul>
+                <li>Open the project for which you want to introduce a change order.</li>
+                <li>Click the Sale Orders shortcut from the top bar.</li>
+                <li>Here click "New" and adjust the sale order details as needed.</li>
+                <li>On confirmation, the sale order is associated to your project!</li>
+            </ul>
+        </p>
+        <div class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-warning pb-0 pt-3" data-oe-role="status" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Warning" aria-label="Banner Warning">⚠️</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3" contenteditable="true">
+                <p>When selling change order, make sure not to use service products creating new projects to keep things in order in a single project.</p>
+            </div>
+        </div>
+        <h5>🏦 Specific tax discount</h5>
+        <p>
+            In some countries, specific tax discount may apply in construction.
+            To handle this, you can use the fiscal position and adjust by which tax replacing one.
+            Assigning the applicable fiscal position to your customer will make sure to use the appropriate taxes!
+        </p>
+        <p>
+            <strong>How to use it:</strong>
+            <ul>
+                <li>From the Invoicing app Configuration menu, open the Fiscal Positions.</li>
+                <li>Create a new fiscal position, give it a name and assign the applicable country.</li>
+                <li>Open now the Taxes still from the configuration menu.</li>
+                <li>Create a new tax or select the applicable one if existing in your localisation package.</li>
+                <li>Configure it as needed in terms of amount and assign it to your newly created fiscal position.</li>
+                <li>If properly setup, the Replaces field is displayed and can be populated with the taxes this tax replaces in this fiscal position.</li>
+                <li>In the Advanced Options tab, adjust the label, country and assign or create a tax group for it.</li>
+                <li>Open the contact form of your contact eligible to the tax discount associated to this fiscal position.</li>
+                <li>In the Sales &amp; Purchase tab, select the applicable fiscal position.</li>
+            </ul>
+        </p>
+        <p>
+            <a class="btn btn-outline-primary btn-sm" href="https://www.odoo.com/documentation/latest/applications/finance/accounting/taxes/fiscal_positions.html">🎓 Fiscal Positions</a>
+        </p>
+        <p>
+            <br/>
+        </p>
+
+        <h3>📝 Centralize all the important information </h3>
+        <hr/>
+        <p>Starting a construction project implies a lot of important documents such as contracts,
+            building plans, instructions for use, subcontracting agreements, etc. Instead of
+            scattering them in your emails, storage services or computer, attach them in the chatter
+            and they will be automatically centralized in the<b>
+                <strong>Documents App</strong>
+            </b>.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Project Files:</strong> Attach blueprints, permits, and contracts.</p>
+            </li>
+            <li>
+                <p><strong>Version Control:</strong> Track updates to important documents.</p>
+            </li>
+            <li>
+                <p><strong>Access Control:</strong> Limit sensitive files to relevant team members.</p>
+            </li>
+            <li>
+                <p><strong>Document Requests:</strong> Send requests with follow up activities.</p>
+            </li>
+        </ul>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Success"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>All new projects get their dedicated document folder from the template project
+                    folder. Adjust it according to your needs!</p>
+            </div>
+        </div>
+        <p>&#xFEFF;<a
+                href="https://www.odoo.com/documentation/latest/applications/finance/documents.html"
+                class="btn btn-fill-secondary">&#xFEFF;🎓 Documents&#xFEFF;</a>&#xFEFF;</p>
+        <p>
+             <br/>
+        </p>
+        <h3>🏗️ Manage your construction project with ease </h3>
+        <hr/>
+        <p> The <strong>Projects App</strong> allows you to manage tasks, assign resources, and
+            create milestones for each construction project.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Task Creation:</strong> Break down construction phases into actionable
+                    items.</p>
+            </li>
+            <li>
+                <p><strong>Milestones:</strong> Define major project achievements.</p>
+            </li>
+            <li>
+                <p><strong>Assignments:</strong> Allocate engineers, site managers, and
+                    subcontractors.</p>
+            </li>
+            <li>
+                <p><strong>Project Updates</strong>: Capture project snapshots along the way from
+                    the dashboard.</p>
+            </li>
+        </ul>
+        <p>&#xFEFF;<a
+                href="https://www.odoo.com/documentation/latest/applications/services/project.html"
+                class="btn btn-fill-secondary">&#xFEFF;🎓 Project&#xFEFF;</a>&#xFEFF;</p>
+        <h5>📐 Project template</h5>
+        <p>On sale order confirmation, the project template is duplicated for the new project to
+            start. <br/>It comes with some predefined tasks and some additional ones directly coming
+            from the sold products:</p>
+        <ul>
+            <li>Architect
+            </li>
+            <li>
+                Down Payment
+            </li>
+            <li>
+                Planification
+            </li>
+            <li>
+                Work
+            </li>
+            <li>
+                Receipt</li>
+        </ul>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-info pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Info"
+                aria-label="Banner Info">💡</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <div class="o-paragraph">Of course, these default tasks can be adapted in the
+                    Project Template according to your personal way of managing a construction
+                    project.</div>
+            </div>
+        </div>
+        <h5>🧙‍♂️ Project management</h5>
+        <ul>
+            <li>From the project, expose all related aspects you want to have at fingertips with the
+                slider icon (🎚️).</li>
+            <li>Open the project dashboard and create new updates to capture all on site visit
+                outcomes. <br/>This helps you keeping track of progress in terms of:</li>
+            <li class="oe-nested">
+                <ul>
+                    <li>Time spent on the project.
+                    </li>
+                    <li>
+                        Materials purchased.
+                    </li>
+                    <li>
+                        Materials sold.</li>
+                </ul>
+            </li>
+
+        </ul>
+        <p>
+             <br/>
+        </p>
+        <h3>📦 Keep an eye on materials </h3>
+        <hr/>
+        <p>
+            <strong>Inventory App</strong> manages materials, tracks deliveries, and monitors site
+            stock to prevent delays or shortages.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Stock Monitoring:</strong> Check available materials and reserve them for
+                    projects.</p>
+            </li>
+            <li>
+                <p><strong>Reordering:</strong> Automate purchase orders for low-stock items.</p>
+            </li>
+            <li>
+                <p><strong>Site Transfers:</strong> Allocate materials to specific construction
+                    sites.</p>
+            </li>
+        </ul>
+        <p>&#xFEFF;<a class="btn btn-fill-secondary"
+                href="https://www.odoo.com/documentation/latest/applications/inventory_and_mrp/inventory.html">&#xFEFF;🎓
+            Inventory&#xFEFF;</a>&#xFEFF;</p>
+        <p><strong>Purchase App </strong>helps you managing requests for proposal, your suppliers
+            and contractors.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Purchase Orders:</strong> Create purchase order for needed products
+                    and services.</p>
+            </li>
+            <li>
+                <p><strong>Product Prices:</strong> Capture prices by suppliers to make the
+                    best moves.</p>
+            </li>
+        </ul>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-info pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Info"
+                aria-label="Banner Info">💡</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>When ordering materials and services, fill in the analytic distribution to wire
+                    the expenses to specific projects.</p>
+            </div>
+        </div>
+        <p>&#xFEFF;<a class="btn btn-fill-secondary"
+                href="https://www.odoo.com/documentation/latest/applications/inventory_and_mrp/purchase.html">&#xFEFF;🎓
+            Purchase&#xFEFF;</a>&#xFEFF;</p>
+        <p>
+             <br/>
+        </p>
+        <h3>📆 Efficiently schedule the work </h3>
+        <hr/>
+        <p> The <strong>Planning app</strong> schedules tasks, allocates employees, and coordinates
+            equipment use across multiple construction sites.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Resource Allocation:</strong> Assign workers, subcontractors, and
+                    machinery.</p>
+            </li>
+            <li>
+                <p><strong>Calendar Views:</strong> Visualize overlapping tasks and adjust
+                    workloads.</p>
+            </li>
+            <li>
+                <p><strong>Roles:</strong> Assign roles to workers and leverage the auto-assign
+                    capability.</p>
+            </li>
+            <li>
+                <p><strong>Alerts &amp; Notifications:</strong> Ensure deadlines are met.</p>
+            </li>
+        </ul>
+        <p>&#xFEFF;<a
+                href="https://www.odoo.com/documentation/latest/applications/services/planning.html"
+                class="btn btn-fill-secondary">&#xFEFF;🎓 Planning&#xFEFF;</a>&#xFEFF;</p>
+        <p>
+             <br/>
+        </p>
+        <h3>🔍 Accurately track the time spent </h3>
+        <hr/>
+        <p>
+            <strong>Timesheets App</strong> help track labor hours and project progress, enabling
+            managers to measure performance and costs in real-time.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Daily Logs:</strong> Employees enter hours per task.</p>
+            </li>
+            <li>
+                <p><strong>Progress Reporting:</strong> Compare actual time vs planned.</p>
+            </li>
+            <li>
+                <p><strong>Cost Analysis:</strong> Link labor to project expenses.</p>
+            </li>
+        </ul>
+        <p>&#xFEFF;<a class="btn btn-fill-secondary"
+                href="https://www.odoo.com/documentation/latest/applications/services/timesheets.html">&#xFEFF;🎓
+            Timesheets&#xFEFF;</a>&#xFEFF;</p>
+        <p>
+             <br/>
+        </p>
+        <h3>📈 Invoice the right amount at the right time </h3>
+        <hr/>
+        <p>
+            <strong>Invoicing App</strong> ensures timely billing, automates recurring invoices, and
+            integrates with project milestones.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Invoice from Quotation:</strong> Convert approved quotes into invoices.</p>
+            </li>
+            <li>
+                <p><strong>Billing:</strong> Invoice based on work completion or project
+                    milestones.</p>
+            </li>
+            <li>
+                <p><strong>Payment Tracking:</strong> Monitor outstanding client payments.</p>
+            </li>
+        </ul>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Success"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>Schedule one or several "Invoicing Schedule" activities on the sales order with
+                    the aim to never forget to send an intermediary invoice in order to sustain
+                    your cash flow.</p>
+            </div>
+        </div>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-info pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Info"
+                aria-label="Banner Info">💡</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>Before generating an intermediary invoice, capture a project update from its
+                    dashboard.</p>
+            </div>
+        </div>
+        <p>&#xFEFF;<a
+                href="https://www.odoo.com/documentation/latest/applications/finance/accounting/customer_invoices.html"
+                class="btn btn-fill-secondary">&#xFEFF;🎓 Invoicing&#xFEFF;</a>&#xFEFF; </p>
+        <h5>🏁 Manual delivery progress management (Construction Developer)</h5>
+        <p>Typically, work items products are priced in a scale-able fashion and billed based on
+            delivered quantity.<br/>Those are defined as service products with invoicing based on
+            manual delivery.</p>
+        <ul>
+            <li>From the project, expose all related aspects you want to have at fingertips with the
+                slider icon (🎚️).</li>
+            <li>Open the Progress view. It captures all sale order lines associated to this project.</li>
+            <li>For each line, adjust the increment fields to capture delivered work since last
+                invoice.</li>
+            <li>Once at the periodic billing moment, select those lines and trigger the delivery
+                update.<br/>This will update sale order to capture those increments and create a
+                draft invoice.</li>
+        </ul>
+        <div data-oe-role="status"
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-info pb-0 pt-3"
+            contenteditable="false" role="status">
+            <i data-oe-aria-label="Banner Info" class="o_editor_banner_icon mb-3 fst-normal"
+                aria-label="Banner Info">💡</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <div class="o-paragraph">Pro tip: Set progress increment directly on a section 
+                    to go faster!</div>
+            </div>
+        </div>
+        <div data-oe-role="status"
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            contenteditable="false" role="status">
+            <i data-oe-aria-label="Banner Success" class="o_editor_banner_icon mb-3 fst-normal"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <div class="o-paragraph">This manual progress view is as well available from the
+                    sale order, in the Progress tab!</div>
+            </div>
+        </div>
+        <h5>⏲️ Time sheet based progress management</h5>
+        <p>Some other work items will be invoiced given the amount of time spent. The time sheet do
+            not only help you to keep track of your costs, they as well are the lever to charge your
+            customers<br/>Those are defined as service products with invoicing based on time sheets.</p>
+        <div data-oe-role="status"
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            contenteditable="false" role="status">
+            <i data-oe-aria-label="Banner Success" class="o_editor_banner_icon mb-3 fst-normal"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>As soon as time sheets associated to sale order lines are approved, the recorded
+                    time is used as delivery metric!</p>
+            </div>
+        </div>
+        <h5>🧾 Multiple orders turning into one bill</h5>
+        <p>
+            You may have signed multiple orders for a given contract and may not want to bill those one by one to your customer.
+            Odoo comes with a capability for consolidated billing in such cases!
+        </p>
+        <ul>
+            <li>Open the sale orders of your project from the project top bar.</li>
+            <li>Select all sale orders you aim at billing.</li>
+            <li>Click the Create Invoices button at the top of the list.</li>
+            <li>I the popup keep the consolidated billing checked and create your draft invoice!</li>
+        </ul>
+        <div class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3" data-oe-role="status" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Success" aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3" contenteditable="true">
+                <p>This use case is especially valuable when setting up change orders and extras!</p>
+            </div>
+        </div>
+        <p>
+            <br/>
+        </p>
+        <h3>💬 Make your customers happy </h3>
+        <hr/>
+        <p>
+            <strong>Helpdesk App</strong> provides responsive customer service, tracks inquiries,
+            and resolves issues efficiently.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li>
+                <p><strong>Ticket Management:</strong> Record issues or change requests.</p>
+            </li>
+            <li>
+                <p><strong>Prioritization:</strong> Assign critical tickets to senior staff.</p>
+            </li>
+            <li>
+                <p><strong>Client Portal:</strong> Allow customers to track the status of their
+                    requests.</p>
+            </li>
+        </ul>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-info pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Info"
+                aria-label="Banner Info">💡</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>All the emails sent to help@your-company-domain will create a ticket that can be
+                    assigned to ensure the follow-up.</p>
+            </div>
+        </div>
+        <p>&#xFEFF;<a
+                href="https://www.odoo.com/documentation/latest/applications/services/helpdesk.html"
+                class="btn btn-fill-secondary">&#xFEFF;🎓 Helpdesk&#xFEFF;</a>&#xFEFF;</p>
+        <p>
+             <br/>
+        </p>
+        <h3>🆘 On-site interventions </h3>
+        <hr/>
+        <p>The <strong>Field Service App</strong> helps you manage on-site interventions such as
+            follow-up works, warranty services, or urgent client requests. Technicians can access
+            tasks, log hours, and report outcomes directly from their mobile devices.</p>
+        <p>
+            <strong>How to use it:</strong>
+        </p>
+        <ul>
+            <li><strong>Service Requests:</strong> Create tasks for maintenance, warranty
+                interventions, or client modifications.</li>
+            <li><strong>Scheduling:</strong> Assign technicians to visits and optimize their
+                calendars.</li>
+            <li><strong>Mobile Execution:</strong> Record time, materials used, and capture photos
+                or client signatures on site.</li>
+            <li><strong>Reporting &amp; Invoicing:</strong> Generate detailed intervention reports
+                and invoice billable work when applicable.</li>
+        </ul>
+        <p>&#xFEFF;<a
+                href="https://www.odoo.com/documentation/latest/applications/services/field_service.html"
+                class="btn btn-fill-secondary">&#xFEFF;🎓 Field Service &#xFEFF;</a>&#xFEFF;</p>
+        <p style="margin-bottom: 0px;">
+             <br/>
+        </p>
+        <div data-oe-role="status"
+            class="o_editor_banner user-select-none lh-1 d-flex align-items-center alert alert-success pb-0 pt-3 o-contenteditable-false"
+            contenteditable="false" role="status">
+            <i data-oe-aria-label="Banner Success" class="o_editor_banner_icon mb-3 fst-normal"
+                aria-label="Banner Success">🎉</i>
+            <div class="w-100 px-3 o_editor_banner_content o-contenteditable-true"
+                contenteditable="true">
+                <p>You completed that demo use case! There are millions of other ways to adapt your
+                    Odoo setup to fit your business needs.</p>
+                <p>Discover more about Odoo by diving into our &#xFEFF;<a
+                        href="https://www.odoo.com/documentation/latest/">
+                    &#xFEFF;documentation&#xFEFF;</a>&#xFEFF;  and &#xFEFF;<a
+                        href="https://www.odoo.com/slides/getting-started-15">
+                    &#xFEFF;academy&#xFEFF;</a>&#xFEFF; , and feel free to &#xFEFF;<a
+                        href="https://www.odoo.com/contactus">&#xFEFF;request a demo&#xFEFF;</a>&#xFEFF; if
+                    you need help!</p>
+            </div>
+        </div>
+        <p>
+             <br/>
+        </p>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-info pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Info"
+                aria-label="Banner Info">🥇</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>
+                    <strong>Tips for success</strong>
+                </p>
+                <ul>
+                    <li>
+                        <div class="o-paragraph"><strong>Standardize templates:</strong> Use
+                            quotation and project templates to save time and maintain consistency.</div>
+                    </li>
+                    <li>
+                        <div class="o-paragraph"><strong>Keep documentation organized:</strong>
+                            Centralize contracts, drawings, and permits for easy access.</div>
+                    </li>
+                    <li>
+                        <div class="o-paragraph"><strong>Monitor stock proactively:</strong> Avoid
+                            project delays by tracking inventory in real-time.</div>
+                    </li>
+                    <li>
+                        <div class="o-paragraph"><strong>Track progress daily:</strong> Encourage
+                            teams to log time and update task status regularly.</div>
+                    </li>
+                    <li>
+                        <div class="o-paragraph"><strong>Use dashboards:</strong> Set up reporting
+                            dashboards to monitor costs, schedules, and client satisfaction.</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <p>
+             <br/>
+        </p>
+        <h2>Do You Want to Go Further?</h2>
+        <hr/>
+        <p>Explore additional apps to enhance your construction business:</p>
+        <ul>
+            <li>
+                <p><strong>Employees</strong> – Manage workforce, skills, and certifications.</p>
+            </li>
+            <li>
+                <p><strong>Fleet</strong> – Track machinery, vehicles, and maintenance schedules.</p>
+            </li>
+            <li>
+                <p><strong>Website</strong> – Publish projects, showcase services, and capture
+                    leads.</p>
+            </li>
+            <li>
+                <p><strong>Accounting</strong> – Advanced financial management and reporting.</p>
+            </li>
+            <li>
+                <p><strong>Sign</strong> – Collect digital signatures for contracts and approvals.</p>
+            </li>
+        </ul>
+        <p>Odoo offers scalable solutions that grow with your business. By integrating these apps,
+            construction companies can maximize efficiency, improve client relations, and reduce
+            operational risks.</p>
+        <div data-oe-role="status"
+            class="o_editor_banner user-select-none lh-1 d-flex align-items-center alert alert-info pb-0 pt-3 o-contenteditable-false"
+            contenteditable="false" role="status">
+            <i data-oe-aria-label="Banner Info" class="o_editor_banner_icon mb-3 fst-normal"
+                aria-label="Banner Info">🚀</i>
+            <div class="w-100 px-3 o_editor_banner_content o-contenteditable-true"
+                contenteditable="true">
+                <p>Would you like to discuss your Odoo setup with us or go even further?</p>
+                <p> &#xFEFF;<a class="btn btn-fill-primary" href="https://www.odoo.com/contactus">&#xFEFF;Reach
+                    us&#xFEFF;</a>&#xFEFF; </p>
+            </div>
+        </div>
+        <p>
+             <br/>
+        </p>
+        <h2>
+            Final word
+        </h2>
+        <hr/>
+        <p>You might have tested this package with or without demo data. <br/>In any case, you may
+            have written records in journals which are not deletable and which might be an issue for
+            your traceability.</p>
+        <div
+            class="o_editor_banner user-select-none o-contenteditable-false lh-1 d-flex align-items-center alert alert-success pb-0 pt-3"
+            data-oe-role="status" contenteditable="false" role="status">
+            <i class="o_editor_banner_icon mb-3 fst-normal" data-oe-aria-label="Banner Success"
+                aria-label="Banner Success">✅</i>
+            <div class="o_editor_banner_content o-contenteditable-true w-100 px-3"
+                contenteditable="true">
+                <p>
+                    <strong>In such situation, feel free to experiment with this database and then
+                        to create a new one for your own usage.</strong>
+                </p>
+            </div>
+        </div>
+    </template>    
+
+    <record id="welcome_article" model="knowledge.article">
+        <field name="name">Construction</field>
+        <field name="internal_permission">write</field>
+        <field name="is_article_visible_by_everyone" eval="True"/>
+        <field name="cover_image_id" ref="knowledge_cover_9"/>
+        <field name="cover_image_position">81.79</field>
+        <field name="is_locked" eval="True"/>
+        <field name="icon">👷‍♂️</field>
+        <field name="body">
+            <![CDATA[]]>
+        </field>
+    </record>
+</odoo> 

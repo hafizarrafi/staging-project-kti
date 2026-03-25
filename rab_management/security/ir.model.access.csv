@@ -1,0 +1,22 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rab_management_sale,rab.management sale,model_rab_management,sales_team.group_sale_manager,1,1,1,1
+access_rab_management_purchase,rab.management purchase,model_rab_management,purchase.group_purchase_manager,1,1,1,1
+access_rab_management_account,rab.management account,model_rab_management,account.group_account_manager,1,1,1,1
+access_rab_management_user,rab.management user,model_rab_management,base.group_user,1,0,0,0
+access_rab_management_line_sale,rab.management.line sale,model_rab_management_line,sales_team.group_sale_manager,1,1,1,1
+access_rab_management_line_purchase,rab.management.line purchase,model_rab_management_line,purchase.group_purchase_manager,1,1,1,1
+access_rab_management_line_account,rab.management.line account,model_rab_management_line,account.group_account_manager,1,1,1,1
+access_rab_vendor_comparison_sale,rab.vendor.comparison sale,model_rab_vendor_comparison,sales_team.group_sale_manager,1,1,1,1
+access_rab_vendor_comparison_purchase,rab.vendor.comparison purchase,model_rab_vendor_comparison,purchase.group_purchase_manager,1,1,1,1
+access_rab_vendor_comparison_account,rab.vendor.comparison account,model_rab_vendor_comparison,account.group_account_manager,1,1,1,1
+access_project_task_material,project.task.material,model_project_task_material,base.group_user,1,1,1,1
+access_project_task_material_actual,project.task.material.actual,model_project_task_material_actual,base.group_user,1,1,1,1
+access_project_material_master_user,project.material.master user,model_project_material_master,base.group_user,1,1,1,1
+access_project_equipment_master_user,project.equipment.master user,model_project_equipment_master,base.group_user,1,1,1,1
+access_project_additional_purchase_user,project.additional.purchase user,model_project_additional_purchase,base.group_user,1,1,1,1
+access_budget_master_user,budget.master user,model_budget_master,base.group_user,1,0,0,0
+access_budget_master_manager,budget.master manager,model_budget_master,account.group_account_manager,1,1,1,1
+access_budget_estimate_user,budget.estimate user,model_budget_estimate,base.group_user,1,0,0,0
+access_budget_estimate_manager,budget.estimate manager,model_budget_estimate,account.group_account_manager,1,1,1,1
+access_budget_transaction_user,budget.transaction user,model_budget_transaction,base.group_user,1,0,0,0
+access_budget_transaction_manager,budget.transaction manager,model_budget_transaction,account.group_account_manager,1,1,1,1

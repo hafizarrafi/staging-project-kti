@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_packing_list_document">
+        <t t-call="web.external_layout">
+            <t t-set="o" t-value="o.with_context(lang=o._get_report_lang())"/>
+            <div class="page">
+                <div class="oe_structure"/>
+                <div class="row">
+                    <div class="col-12 text-center">
+                        <h2>PACKING LIST</h2>
+                        <h4><span t-field="o.name"/></h4>
+                    </div>
+                </div>
+
+                <div class="row mt-4 mb-4">
+                    <div class="col-6">
+                        <strong>Customer:</strong>
+                        <div t-field="o.partner_id" t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True}'/>
+                    </div>
+                    <div class="col-6 text-end">
+                        <div t-if="o.origin">
+                            <strong>Source Document:</strong>
+                            <p t-field="o.origin"/>
+                        </div>
+                        <div t-if="o.date_done">
+                            <strong>Effective Date:</strong>
+                            <p t-field="o.date_done"/>
+                        </div>
+                        <div t-elif="o.scheduled_date">
+                            <strong>Scheduled Date:</strong>
+                            <p t-field="o.scheduled_date"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4 mb-2">
+                    <div class="col-6">
+                        <strong>Total Boxes:</strong> <span t-esc="len(o.package_ids)"/>
+                    </div>
+                </div>
+
+                <table class="table table-sm o_main_table table-bordered">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 70%;">PRODUCT</th>
+                            <th class="text-center" style="width: 30%;">QUANTITY</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="o.package_ids.sorted(key=lambda p: p.name)" t-as="pkg">
+                            <!-- Package Section Header -->
+                            <tr style="background-color: #f5f5f5; font-weight: bold;">
+                                <td>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><i class="fa fa-archive"/> <span t-field="pkg.name"/></span>
+                                        <span t-if="pkg.fill_status == 'under'" class="badge bg-danger text-white ml-2">PARTIAL FILL</span>
+                                        <span t-if="pkg.fill_status == 'acceptable'" class="badge bg-warning text-dark ml-2">STANDARD FILL</span>
+                                        <span t-if="pkg.fill_status == 'full'" class="badge bg-success text-white ml-2">FULL BOX</span>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span t-esc="'%.0f' % pkg.total_inner_qty if pkg.total_inner_qty == int(pkg.total_inner_qty) else '%.2f' % pkg.total_inner_qty"/> Items
+                                </td>
+                            </tr>
+                            <!-- Items in Package -->
+                            <t t-set="lines" t-value="o.env['stock.move.line'].search([('result_package_id', '=', pkg.id), ('quantity', '>', 0)])"/>
+                            <tr t-foreach="lines" t-as="line">
+                                <td style="padding-left: 20px;">
+                                    <span t-field="line.product_id.display_name"/>
+                                </td>
+                                <td class="text-center">
+                                    <span t-esc="'%.0f' % line.quantity if line.quantity == int(line.quantity) else '%.2f' % line.quantity"/>
+                                    <span t-field="line.product_uom_id" groups="uom.group_uom"/>
+                                </td>
+                            </tr>
+                        </t>
+                        
+                        <!-- Items without package -->
+                        <t t-set="no_pkg_lines" t-value="o.move_line_ids.filtered(lambda l: not l.result_package_id and l.quantity > 0)"/>
+                        <t t-if="no_pkg_lines">
+                            <tr style="background-color: #f5f5f5; font-weight: bold;">
+                                <td colspan="2">
+                                    <span>UNPACKAGED ITEMS</span>
+                                </td>
+                            </tr>
+                            <tr t-foreach="no_pkg_lines" t-as="line">
+                                <td style="padding-left: 20px;">
+                                    <span t-field="line.product_id.display_name"/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-esc="'%.0f' % line.quantity if line.quantity == int(line.quantity) else '%.2f' % line.quantity"/>
+                                    <span t-field="line.product_uom_id" groups="uom.group_uom"/>
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+
+                <div class="row mt-5">
+                    <div class="col-4 text-center">
+                        <p>Prepared By,</p>
+                        <br/><br/>
+                        <p>( ____________________ )</p>
+                    </div>
+                    <div class="col-4 text-center">
+                        <p>Checked By,</p>
+                        <br/><br/>
+                        <p>( ____________________ )</p>
+                    </div>
+                    <div class="col-4 text-center">
+                        <p>Received By,</p>
+                        <br/><br/>
+                        <p>( ____________________ )</p>
+                    </div>
+                </div>
+                <div class="oe_structure"/>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_packing_list">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="fastindo_project.report_packing_list_document" t-lang="o._get_report_lang()"/>
+            </t>
+        </t>
+    </template>
+</odoo>

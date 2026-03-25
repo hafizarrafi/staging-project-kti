@@ -1,0 +1,90 @@
+.o_fastindo_packing_dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 0;
+
+    .o_fastindo_package_card {
+        border: 1px solid rgba(222, 226, 230, 0.4); // Thinner and more transparent border
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        background-color: transparent; 
+
+        &.status-full {
+            border-left: 2px solid #2ecc71; // Thinner status line
+        }
+
+        &.status-acceptable {
+            border-left: 2px solid #f39c12; // Thinner status line
+        }
+
+        &.status-under {
+            border-left: 2px solid #e74c3c; // Thinner status line
+        }
+
+        .card-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                
+                i {
+                    opacity: 0.8;
+                }
+            }
+
+            .badge {
+                font-size: 0.85em;
+                font-weight: normal;
+                opacity: 0.8;
+                border: 1px solid #dee2e6;
+                color: inherit;
+            }
+        }
+
+        .card-body {
+            padding: 0;
+
+            table {
+                font-size: 0.95em;
+                
+                thead {
+                    opacity: 0.6;
+                    border-bottom: 1px solid #f0f0f0;
+                    
+                    th {
+                        padding: 8px 16px;
+                        font-weight: 500;
+                        font-size: 0.85em;
+                        text-transform: uppercase;
+                        border-top: none;
+                    }
+                }
+
+                tbody {
+                    tr {
+                        border-bottom: 1px solid #f8f9fa;
+                        
+                        &:last-child {
+                            border-bottom: none;
+                        }
+
+                        td {
+                            padding: 10px 16px;
+                            vertical-align: middle;
+                            border-top: none;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

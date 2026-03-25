@@ -1,0 +1,1131 @@
+===== FOLDER STRUCTURE =====
+setup_loka
+├── context.txt
+├── data
+│   ├── res_company.xml
+│   ├── res_currency.xml
+│   ├── res_users.xml
+│   └── uom.xml
+├── hooks.py
+├── __init__.py
+├── __manifest__.py
+├── models
+│   ├── __init__.py
+│   ├── product.py
+│   ├── product_uom_factor.py
+│   ├── purchase_order.py
+│   ├── sale_order.py
+│   ├── stock_move.py
+│   └── uom.py
+├── security
+│   └── ir.model.access.csv
+└── views
+    ├── product_views.xml
+    ├── purchase_order_views.xml
+    └── sale_order_views.xml
+
+5 directories, 19 files
+
+===== FILE CONTENT =====
+
+
+===== FILE: setup_loka/hooks.py =====
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+def post_init_hook(env):
+    """Konfigurasi otomatis setelah modul diinstall:
+    1. Aktivasi Bahasa Indonesia
+    2. Set bahasa user ke Indonesia
+    3. Set negara & mata uang (IDR)
+    4. Muat Chart of Accounts (CoA) & Pajak
+    5. Set lokalisasi fiskal
+    """
+    _setup_bahasa_indonesia(env)
+    _setup_user_language(env)
+    _setup_company_indonesia(env)
+    _setup_currency_idr(env)
+    _load_chart_of_accounts(env)
+    _setup_fiscal_localization(env)
+    _setup_pricelist_idr(env)
+    _setup_inventory_config(env)
+    _log_coretax_status(env)
+
+
+def _setup_pricelist_idr(env):
+    """Set mata uang pricelist standar ke Rupiah (IDR)."""
+    idr = env.ref('base.IDR', raise_if_not_found=False)
+    if not idr:
+        # Try finding by code if ref fails
+        idr = env['res.currency'].search([('name', '=', 'IDR')], limit=1)
+    
+    if not idr:
+        _logger.warning('product_lti: IDR currency not found.')
+        return
+
+    if not idr.active:
+        idr.sudo().write({'active': True})
+
+    # 1. Update Public Pricelist (product.list0 is the standard XML ID)
+    public_pricelist = env.ref('product.list0', raise_if_not_found=False)
+    if not public_pricelist:
+        # Fallback: search for any pricelist named "Public Pricelist" or "Default"
+        public_pricelist = env['product.pricelist'].search([('name', 'ilike', 'Public')], limit=1)
+    
+    # Also check for "Default (USD)" specifically reported by user
+    usd_pricelist = env['product.pricelist'].search([('name', 'ilike', 'Default (USD)')], limit=1)
+    if usd_pricelist and usd_pricelist.currency_id != idr:
+        usd_pricelist.sudo().write({
+            'currency_id': idr.id,
+            'name': 'Default (IDR)'
+        })
+        _logger.info('product_lti: "Default (USD)" pricelist renamed and updated to IDR.')
+
+    if public_pricelist and public_pricelist.currency_id != idr:
+        public_pricelist.sudo().write({'currency_id': idr.id})
+        _logger.info('product_lti: Public pricelist updated to IDR.')
+
+    # 2. Update all partners
+    # Odoo 17+ uses property_product_pricelist on res.partner
+    if public_pricelist:
+        # Set as default for new partners (ir.property)
+        env['ir.property'].sudo()._set_default(
+            'property_product_pricelist',
+            'res.partner',
+            public_pricelist.id,
+            env.company.id
+        )
+        
+        # Update existing partners
+        partners = env['res.partner'].search([])
+        partners.sudo().write({'property_product_pricelist': public_pricelist.id})
+        _logger.info('product_lti: All partners updated to IDR pricelist.')
+
+    _logger.info('product_lti: Pricelist configuration updated to IDR.')
+
+
+def _setup_bahasa_indonesia(env):
+    """Aktifkan Bahasa Indonesia dan muat terjemahan."""
+    lang = env['res.lang'].with_context(active_test=False).search(
+        [('code', '=', 'id_ID')], limit=1
+    )
+    if not lang:
+        _logger.warning('product_lti: Bahasa Indonesia (id_ID) tidak ditemukan di sistem.')
+        return
+
+    if not lang.active:
+        lang.sudo().write({'active': True})
+        _logger.info('product_lti: Bahasa Indonesia diaktifkan.')
+
+    installed_modules = env['ir.module.module'].search([('state', '=', 'installed')])
+    installed_modules._update_translations(['id_ID'])
+    _logger.info('product_lti: Terjemahan Bahasa Indonesia berhasil dimuat.')
+
+
+def _setup_company_indonesia(env):
+    """Atur negara perusahaan ke Indonesia."""
+    company = env.company
+    indonesia = env.ref('base.id', raise_if_not_found=False)
+
+    if not indonesia:
+        _logger.warning('product_lti: Data negara Indonesia (base.id) tidak ditemukan.')
+        return
+
+    if company.country_id.id != indonesia.id:
+        company.sudo().write({'country_id': indonesia.id})
+
+    partner = company.partner_id
+    if partner.lang != 'id_ID':
+        partner.sudo().write({'lang': 'id_ID'})
+
+    _logger.info('product_lti: Perusahaan dikonfigurasi untuk Indonesia (country + lang).')
+
+
+def _setup_user_language(env):
+    """Atur semua user internal ke Bahasa Indonesia."""
+    internal_users = env['res.users'].search([
+        ('active', '=', True),
+        ('share', '=', False),
+    ])
+    users_to_update = internal_users.filtered(lambda u: u.lang != 'id_ID')
+    if users_to_update:
+        users_to_update.sudo().write({'lang': 'id_ID'})
+        _logger.info(
+            'product_lti: %d user internal diatur ke Bahasa Indonesia (id_ID).',
+            len(users_to_update),
+        )
+    else:
+        _logger.info('product_lti: Semua user sudah menggunakan Bahasa Indonesia.')
+
+
+def _setup_currency_idr(env):
+    """Atur mata uang perusahaan ke Rupiah (IDR)."""
+    idr = env.ref('base.IDR', raise_if_not_found=False)
+    if not idr:
+        _logger.warning('product_lti: Mata uang IDR (base.IDR) tidak ditemukan.')
+        return
+
+    company = env.company
+    if company.currency_id.id == idr.id:
+        _logger.info('product_lti: Mata uang perusahaan sudah IDR, lewati.')
+        return
+
+    company.sudo().write({'currency_id': idr.id})
+    _logger.info('product_lti: Mata uang perusahaan diatur ke IDR (Rupiah Indonesia).')
+
+
+def _load_chart_of_accounts(env):
+    """Muat Chart of Accounts (CoA) Indonesia."""
+    env.invalidate_all()
+    company = env.company
+
+    if company.chart_template == 'id':
+        _logger.info('product_lti: Indonesian CoA sudah terkonfigurasi, lewati.')
+        # Tetap hapus _auto_install_template meski CoA sudah ada
+        if hasattr(env.registry, '_auto_install_template'):
+            del env.registry._auto_install_template
+            _logger.info(
+                'product_lti: _auto_install_template dihapus '
+                '(Indonesian CoA sudah dimuat, generic_coa override dicegah).'
+            )
+        return
+
+    try:
+        env['account.chart.template'].sudo().try_loading('id', company, install_demo=False)
+        env.invalidate_all()
+        _logger.info('product_lti: Indonesian Chart of Accounts berhasil dimuat.')
+    except Exception as exc:
+        _logger.error(
+            'product_lti: Gagal memuat Indonesian CoA: %s', exc, exc_info=True
+        )
+        return
+
+    # Hapus callback auto-install yang di-set oleh ir.module.module.write()
+    # saat module 'account' diinstall (sebelum hook ini berjalan, company belum
+    # punya chart_template → 'generic_coa' dijadwalkan via _register_hook).
+    # Karena kita sudah memuat Indonesian CoA, callback generic_coa ini tidak
+    # diperlukan dan harus dihapus agar tidak menimpa CoA Indonesia kita.
+    if hasattr(env.registry, '_auto_install_template'):
+        del env.registry._auto_install_template
+        _logger.info(
+            'product_lti: _auto_install_template dihapus '
+            '(mencegah generic_coa override Indonesian CoA).'
+        )
+
+
+def _setup_fiscal_localization(env):
+    """Pastikan lokalisasi fiskal perusahaan adalah Indonesia."""
+    company_fields = env['res.company']._fields
+    if 'account_fiscal_country_id' not in company_fields:
+        _logger.info(
+            'product_lti: Field account_fiscal_country_id tidak tersedia '
+            '(module account belum terinstall), lewati fiscal localization.'
+        )
+        return
+
+    indonesia = env.ref('base.id', raise_if_not_found=False)
+    if not indonesia:
+        _logger.warning('product_lti: Data negara Indonesia (base.id) tidak ditemukan.')
+        return
+
+    company = env.company
+
+    # Flush semua pending ORM write + recompute ke DB sebelum SQL langsung
+    env.flush_all()
+
+    # Direct SQL: bypass ORM computed field recompute mechanism sepenuhnya.
+    # Setelah flush_all(), tidak ada pending recompute yang bisa override.
+    env.cr.execute(
+        "UPDATE res_company SET account_fiscal_country_id = %s WHERE id = %s",
+        [indonesia.id, company.id],
+    )
+
+    # Bersihkan cache agar pembacaan ORM berikutnya membaca nilai baru dari DB
+    env.invalidate_all()
+    _logger.info('product_lti: Fiscal localization diatur ke Indonesia.')
+
+
+def _log_coretax_status(env):
+    """Cek status instalasi CoreTax E-Faktur."""
+    coretax = env['ir.module.module'].search(
+        [('name', '=', 'l10n_id_efaktur_coretax'), ('state', '=', 'installed')],
+        limit=1
+    )
+    if coretax:
+        _logger.info(
+            'product_lti: CoreTax E-Faktur (l10n_id_efaktur_coretax) aktif. '
+            'Format XML DJP siap digunakan.'
+        )
+    else:
+        _logger.warning(
+            'product_lti: CoreTax E-Faktur belum terinstall. '
+            'Pastikan l10n_id_efaktur_coretax tersedia di addons path.'
+        )
+
+
+def _setup_inventory_config(env):
+    """Aktifkan fitur Varian Produk dan Satuan Ukuran (UoM)."""
+    # 1. Aktifkan group_uom dan group_product_variant untuk semua user internal
+    group_uom = env.ref('uom.group_uom', raise_if_not_found=False)
+    group_variant = env.ref('product.group_product_variant', raise_if_not_found=False)
+    
+    internal_users = env['res.users'].search([
+        ('active', '=', True),
+        ('share', '=', False),
+    ])
+
+    if group_uom:
+        group_uom.sudo().write({'user_ids': [(4, user.id) for user in internal_users]})
+        _logger.info('product_lti: Group Satuan Ukuran (UoM) diaktifkan untuk semua user internal.')
+
+    if group_variant:
+        group_variant.sudo().write({'user_ids': [(4, user.id) for user in internal_users]})
+        _logger.info('product_lti: Group Varian Produk diaktifkan untuk semua user internal.')
+
+
+===== FILE: setup_loka/security/ir.model.access.csv =====
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_product_uom_factor_user,product.uom.factor user,model_product_uom_factor,base.group_user,1,1,1,1
+access_product_uom_factor_manager,product.uom.factor manager,model_product_uom_factor,base.group_partner_manager,1,1,1,1
+
+
+===== FILE: setup_loka/data/uom.xml =====
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+
+    <!-- Unit -->
+    <record id="uom.product_uom_unit" model="uom.uom">
+        <field name="active">True</field>
+    </record>
+
+    <!-- Kilogram -->
+    <record id="uom.product_uom_kgm" model="uom.uom">
+        <field name="active">True</field>
+    </record>
+
+    <!-- Gram -->
+    <record id="uom.product_uom_gram" model="uom.uom">
+        <field name="active">True</field>
+    </record>
+
+    <!-- Ton -->
+    <record id="uom.product_uom_ton" model="uom.uom">
+        <field name="active">True</field>
+    </record>
+
+    <!-- Meter -->
+    <record id="uom.product_uom_meter" model="uom.uom">
+        <field name="active">True</field>
+    </record>
+
+    <!-- Centimeter -->
+    <record id="uom.product_uom_cm" model="uom.uom">
+        <field name="active">True</field>
+    </record>
+
+    <!-- Cubic Meter -->
+    <record id="uom.product_uom_cubic_meter" model="uom.uom">
+        <field name="active">True</field>
+    </record>
+
+    <!-- Batang -->
+    <record id="uom_uom_batang" model="uom.uom">
+        <field name="name">Batang</field>
+        <field name="relative_factor">1.0</field>
+    </record>
+
+    <record id="uom_uom_lembar" model="uom.uom">
+        <field name="name">Lembar</field>
+        <field name="relative_factor">1.0</field>
+    </record>
+
+    <!-- Meter Kubik -->
+    <record id="uom_uom_meter_kubik" model="uom.uom">
+        <field name="name">Meter Kubik</field>
+        <field name="relative_factor">1.0</field>
+    </record>
+
+    <record id="uom_uom_kulbak" model="uom.uom">
+        <field name="name">Kulbak</field>
+        <field name="relative_factor">1.0</field>
+    </record>
+
+    <record id="uom_uom_truk" model="uom.uom">
+        <field name="name">Truk</field>
+        <field name="relative_factor">1.0</field>
+    </record>
+
+</odoo>
+
+===== FILE: setup_loka/data/res_currency.xml =====
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+
+    <!-- aktivasi Indonesian Rupiah -->
+    <record id="base.IDR" model="res.currency">
+        <field name="active">True</field>
+    </record>
+
+</odoo>
+
+===== FILE: setup_loka/data/res_company.xml =====
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+
+    <!-- setting ke rupiah-->
+    <record id="base.main_company" model="res.company">
+        <field name="currency_id" ref="base.IDR"/>
+    </record>
+
+</odoo>
+
+===== FILE: setup_loka/data/res_users.xml =====
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+
+    <!-- set bahasa -->
+    <record id="base.user_admin" model="res.users">
+        <field name="lang">id_ID</field>
+    </record>
+
+</odoo>
+
+===== FILE: setup_loka/__init__.py =====
+from . import models
+from .hooks import post_init_hook
+
+===== FILE: setup_loka/views/purchase_order_views.xml =====
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_order_form_inherit_uom_context" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.uom.context</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+
+
+===== FILE: setup_loka/views/product_views.xml =====
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form Produk - Tambah Tab Konversi Satuan -->
+    <record id="product_template_form_uom_factors" model="ir.ui.view">
+        <field name="name">product.template.form.uom.factors</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Fix typo in label "Pajak Penjualan" -->
+            <xpath expr="//field[@name='taxes_id']" position="attributes">
+                <attribute name="string">Pajak Penjualan</attribute>
+            </xpath>
+
+            <!-- Insert the conversion table into Informasi Umum tab -->
+            <xpath expr="//page[@name='general_information']" position="inside">
+                <separator string="Harga &amp; Stok Satuan Alternatif"/>
+                <div class="alert alert-info py-2" role="alert">
+                    <p class="mb-0"><strong>💡 Tip:</strong> Anda bisa mengubah <strong>Harga</strong> dan <strong>Stok</strong> langsung di tabel bawah. Perubahan stok otomatis mengupdate "Kuantitas Di Tangan".</p>
+                </div>
+                <field name="uom_factor_ids">
+                    <list editable="bottom" decoration-info="True">
+                        <field name="uom_id" string="Satuan Alternatif"/>
+                        <field name="conversion_factor" string="Sama Dengan (Satuan Dasar)"/>
+                        <field name="price" string="Harga per Satuan" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        <field name="qty_available_alt_uom" string="Jumlah Stok" widget="float" options="{'decimal_places': 2}"/>
+                        <field name="notes" placeholder="Catatan..."/>
+                    </list>
+                </field>
+            </xpath>
+
+            <!-- Tampilan stok ekuivalen di bawah Kuantitas Di Tangan -->
+            <xpath expr="//div[field[@name='qty_available']]" position="after">
+                <label for="qty_alt_html" string="Stok Satuan Alternatif" invisible="not is_storable"/>
+                <div class="o_row" invisible="not is_storable">
+                    <field name="qty_alt_html" widget="html" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- List View Faktor Konversi Satuan -->
+    <record id="product_uom_factor_list" model="ir.ui.view">
+        <field name="name">product.uom.factor.list</field>
+        <field name="model">product.uom.factor</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="product_id"/>
+                <field name="uom_id"/>
+                <field name="conversion_factor" widget="float" options="{'decimal_places': 2}"/>
+                <field name="price"/>
+                <field name="qty_available_alt_uom" readonly="1" widget="float" options="{'decimal_places': 2}"/>
+                <field name="base_uom_id" invisible="1"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View Faktor Konversi Satuan -->
+    <record id="product_uom_factor_form" model="ir.ui.view">
+        <field name="name">product.uom.factor.form</field>
+        <field name="model">product.uom.factor</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="product_id"/>
+                    <field name="base_uom_id" readonly="1"/>
+                    <field name="uom_id"/>
+                    <field name="conversion_factor" widget="float" options="{'decimal_places': 2}" help="Masukkan rasio konversi. Contoh: 0.80 berarti 1 Satuan Alternatif = 0.80 Satuan Dasar"/>
+                    <field name="price"/>
+                </group>
+                <group>
+                    <field name="qty_available_alt_uom" readonly="1" widget="float" options="{'decimal_places': 2}" label="Stok Saat Ini"/>
+                </group>
+                <field name="notes" placeholder="Tambah catatan konversi..."/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View Faktor Konversi Satuan -->
+    <record id="product_uom_factor_search" model="ir.ui.view">
+        <field name="name">product.uom.factor.search</field>
+        <field name="model">product.uom.factor</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="uom_id"/>
+                <filter name="filter_product" string="Product" context="{'group_by': 'product_id'}"/>
+                <filter name="filter_uom" string="UoM" context="{'group_by': 'uom_id'}"/>
+            </search>
+        </field>
+    </record>
+
+</odoo>
+
+
+===== FILE: setup_loka/views/sale_order_views.xml =====
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit_uom_context" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.uom.context</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+
+
+===== FILE: setup_loka/models/product.py =====
+from odoo import models, fields, api
+
+
+class ProductTemplate(models.Model):
+    _inherit = 'product.template'
+
+    uom_factor_ids = fields.One2many(
+        'product.uom.factor',
+        'product_id',
+        string='Faktor Konversi Satuan',
+        help='Tentukan rasio konversi untuk satuan alternatif'
+    )
+
+    qty_alt_html = fields.Html(
+        string='Stok Satuan Alternatif',
+        compute='_compute_qty_alt_html',
+        sanitize=True,
+        help='Menampilkan stok dalam satuan alternatif (HTML)'
+    )
+
+    @api.depends('qty_available', 'uom_factor_ids.conversion_factor')
+    def _compute_qty_alt_html(self):
+        for tmpl in self:
+            lines = []
+            base_qty = tmpl.qty_available or 0.0
+            for factor in tmpl.uom_factor_ids:
+                try:
+                    if factor.conversion_factor and factor.conversion_factor > 0:
+                        alt_qty = base_qty / factor.conversion_factor
+                    else:
+                        alt_qty = 0.0
+                except Exception:
+                    alt_qty = 0.0
+                lines.append(f"{alt_qty:,.2f} {factor.uom_id.name}")
+            # buat HTML sederhana
+            html = '<div class="o_alt_uom_list">' + ''.join(f'<div>{l}</div>' for l in lines) + '</div>'
+            tmpl.qty_alt_html = html
+
+    def _get_converted_quantity(self, quantity, from_uom, to_uom):
+
+        """Konversi satuan menggunakan faktor khusus produk."""
+        # Jika satuan sama, tidak perlu konversi
+        if from_uom == to_uom:
+            return quantity
+        
+        if not factor_record:
+            # Gunakan konversi standar Odoo jika tidak ada faktor khusus
+            return from_uom._compute_quantity(quantity, to_uom)
+        
+        # Konversi menggunakan faktor produk
+        return quantity * factor_record.conversion_factor
+
+
+===== FILE: setup_loka/models/product_uom_factor.py =====
+from odoo import models, fields, api
+from odoo.exceptions import ValidationError
+
+
+class ProductUoMFactor(models.Model):
+    _name = 'product.uom.factor'
+    _description = 'Faktor Konversi Satuan Produk'
+    _order = 'product_id, uom_id'
+
+    product_id = fields.Many2one(
+        'product.template',
+        string='Produk',
+        required=True,
+        ondelete='cascade',
+        help='Produk yang dikonversi'
+    )
+
+    currency_id = fields.Many2one(
+        'res.currency', 
+        string='Mata Uang', 
+        related='product_id.currency_id'
+    )
+
+    uom_id = fields.Many2one(
+        'uom.uom',
+        string='Satuan Alternatif',
+        required=True,
+        help='Satuan alternatif untuk produk ini'
+    )
+
+    conversion_factor = fields.Float(
+        string='Faktor Konversi',
+        required=True,
+        digits=(16, 2),
+        help='Rasio konversi. Contoh: jika 1 Pickup = 0.8 m³, isi 0.8'
+    )
+
+    price = fields.Float(
+        string='Harga',
+        digits='Product Price',
+        help='Harga per 1 satuan alternatif'
+    )
+
+    base_uom_id = fields.Many2one(
+        'uom.uom',
+        related='product_id.uom_id',
+        readonly=True,
+        string='Satuan Dasar',
+        help='Satuan dasar/referensi produk ini'
+    )
+
+    qty_available_alt_uom = fields.Float(
+        string='Stok Satuan Alternatif',
+        compute='_compute_qty_available_alt_uom',
+        inverse='_inverse_qty_available_alt_uom',
+        digits=(16, 2),
+        help='Stok dalam satuan alternatif. Mengubah ini akan memicu penyesuaian stok.'
+    )
+
+    notes = fields.Text(
+        string='Catatan',
+        help='Informasi tambahan konversi'
+    )
+
+    @api.depends('product_id.qty_available', 'conversion_factor')
+
+    def _compute_qty_available_alt_uom(self):
+        """Hitung stok dalam satuan alternatif."""
+        for record in self:
+            if record.conversion_factor > 0:
+                # qty_available is in base UoM, convert to alternative UoM
+                # If 1 Alt = 0.8 Base, then Alt = Base / 0.8
+                record.qty_available_alt_uom = record.product_id.qty_available / record.conversion_factor
+            else:
+                record.qty_available_alt_uom = 0
+
+    def _inverse_qty_available_alt_uom(self):
+        """Metode inverse untuk penyesuaian stok saat Qty Satuan Alternatif diubah."""
+        import logging
+        _logger = logging.getLogger(__name__)
+        
+        for record in self:
+            if not record.product_id:
+                continue
+            
+            # Menggunakan variant produk pertama    
+            product = record.product_id.product_variant_id
+            if not product:
+                continue
+                
+            # Menggunakan savepoint untuk setiap record untuk mencegah satu kegagalan menghentikan transaksi seluruhnya
+            self.env.cr.execute('SAVEPOINT loka_uom_inverse_adjust')
+            try:
+                company = product.company_id or self.env.company
+                warehouse = self.env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
+                if not warehouse:
+                    warehouse = self.env['stock.warehouse'].search([], limit=1)
+                    
+                if not warehouse or not warehouse.lot_stock_id:
+                    _logger.warning(f"No warehouse found for product {product.display_name}")
+                    continue
+
+                # Menghitung qty base yang diinginkan = qty alt baru * faktor konversi
+                desired_base_qty = record.qty_available_alt_uom * (record.conversion_factor or 1.0)
+                
+                # Pastikan property_stock_inventory diatur untuk menghindari NotNullViolation (location_dest_id)
+                # Properti ini biasanya pada level template
+                template = product.product_tmpl_id
+                if not template.sudo().with_company(company).property_stock_inventory:
+                    inventory_location = self.env['stock.location'].search([
+                        ('usage', '=', 'inventory'),
+                        ('company_id', 'in', [company.id, False])
+                    ], limit=1)
+                    if inventory_location:
+                        template.sudo().with_company(company).write({
+                            'property_stock_inventory': inventory_location.id
+                        })
+                        template.flush_recordset(['property_stock_inventory'])
+                    else:
+                        _logger.error(f"No inventory location found for company {company.name}")
+                        continue
+
+                # Membuat stock.quant dengan inventory_mode=True
+                # Menggunakan inventory_mode=True memungkinkan untuk menetapkan inventory_quantity langsung
+                quant = self.env['stock.quant'].with_context(inventory_mode=True).create({
+                    'product_id': product.id,
+                    'location_id': warehouse.lot_stock_id.id,
+                    'inventory_quantity': desired_base_qty,
+                })
+                quant.action_apply_inventory()
+                self.env.cr.execute('RELEASE SAVEPOINT loka_uom_inverse_adjust')
+            except Exception as e:
+                # kembali ke savepoint untuk mencegah satu kegagalan menghentikan transaksi seluruhnya
+                self.env.cr.execute('ROLLBACK TO SAVEPOINT loka_uom_inverse_adjust')
+                _logger.error(f'Gagal menyesuaikan UoM live untuk {record.product_id.name}: {str(e)}')
+
+    @api.constrains('conversion_factor', 'uom_id')
+    def _check_conversion_factor(self):
+        """Pastikan faktor konversi bernilai positif."""
+        for record in self:
+            # Hanya validasi jika baris sebenarnya sedang diisi (memiliki uom_id)
+            if record.uom_id and record.conversion_factor <= 0:
+                raise ValidationError('Maaf, Faktor Konversi harus bernilai positif / lebih dari 0.')
+
+    _sql_constraints = [
+        (
+            'unique_product_uom',
+            'UNIQUE(product_id, uom_id)',
+            'Setiap produk hanya boleh memiliki satu faktor konversi per satuan.'
+        ),
+    ]
+
+    def display_conversion(self):
+        """Tampilkan keterangan konversi yang mudah dibaca."""
+        return f"1 {self.uom_id.name} = {self.conversion_factor} {self.base_uom_id.name}"
+
+
+===== FILE: setup_loka/models/purchase_order.py =====
+from odoo import models, fields, api
+
+class PurchaseOrderLine(models.Model):
+    _inherit = 'purchase.order.line'
+
+    @api.onchange('product_uom_id', 'product_id')
+    def _onchange_product_uom_custom_price(self):
+        """Set harga otomatis jika satuan alternatif memiliki harga khusus."""
+        if not self.product_id or not self.product_uom_id:
+            return
+
+        # Cari harga khusus di faktor konversi
+        factor = self.env['product.uom.factor'].search([
+            ('product_id', '=', self.product_id.product_tmpl_id.id),
+            ('uom_id', '=', self.product_uom_id.id)
+        ], limit=1)
+
+        if factor and factor.price > 0:
+            self.price_unit = factor.price
+
+    @api.depends('product_id', 'product_id.uom_id', 'product_id.uom_factor_ids.uom_id')
+    def _compute_allowed_uom_ids(self):
+        """Masukkan satuan alternatif dalam daftar pilihan."""
+        super()._compute_allowed_uom_ids()
+        for line in self:
+            if line.product_id:
+                # Tambah satuan dari faktor konversi
+                custom_uoms = line.product_id.product_tmpl_id.uom_factor_ids.mapped('uom_id')
+                line.allowed_uom_ids |= custom_uoms
+
+    def _prepare_stock_moves(self, picking):
+        """Pastikan satuan tetap terjaga jika ada faktor konversi khusus."""
+        has_custom_factor = any(
+            line.product_id.product_tmpl_id.uom_factor_ids.filtered(lambda f: f.uom_id == line.product_uom_id)
+            for line in self if line.product_id
+        )
+        if has_custom_factor:
+            return super(PurchaseOrderLine, self.with_context(force_uom_propagation=True))._prepare_stock_moves(picking)
+        return super()._prepare_stock_moves(picking)
+
+
+===== FILE: setup_loka/models/uom.py =====
+import logging
+
+from odoo import models, api, fields, tools
+
+_logger = logging.getLogger(__name__)
+
+
+class UomUom(models.Model):
+    _inherit = 'uom.uom'
+
+    def _adjust_uom_quantities(self, qty, quant_uom):
+        """
+        Custom override to allow bypassing base UoM conversion.
+        If 'force_uom_propagation' is in context, we keep the original UoM.
+        """
+        if self.env.context.get('force_uom_propagation'):
+            return qty, self
+        return super()._adjust_uom_quantities(qty, quant_uom)
+
+    def _get_product_id_from_context(self):
+        """Helper to find product_id or template_id from various context keys."""
+        val = (
+            self.env.context.get('product_id') or
+            self.env.context.get('default_product_id') or
+            self.env.context.get('product_template_id') or
+            self.env.context.get('default_product_template_id')
+        )
+        if isinstance(val, (list, tuple)) and val:
+            return val[0]
+        if isinstance(val, int):
+            return val
+        return False
+
+    def _compute_quantity(self, qty, to_unit, round=True, rounding_method='UP', raise_if_failure=True):
+        """
+        Override _compute_quantity to be product-aware via context.
+        This ensures calculations like the UoM widget conversion info are correct.
+        """
+        product_id = self._get_product_id_from_context()
+
+        if not product_id or not qty:
+            return super()._compute_quantity(qty, to_unit, round, rounding_method, raise_if_failure)
+
+        # Lookup template
+        res_model = self.env.context.get('product_model')
+        if not res_model:
+            res_model = self.env.context.get('active_model') or 'product.product'
+            if res_model not in ['product.product', 'product.template']:
+                 res_model = 'product.product'
+
+        product = self.env[res_model].browse(product_id).exists()
+        if not product:
+            other_model = 'product.template' if res_model == 'product.product' else 'product.product'
+            product = self.env[other_model].browse(product_id).exists()
+
+        template = product if product and product._name == 'product.template' else (product.product_tmpl_id if product else None)
+
+        if not template:
+            return super()._compute_quantity(qty, to_unit, round, rounding_method, raise_if_failure)
+
+        custom_factors = {
+            f.uom_id.id: f.conversion_factor
+            for f in template.uom_factor_ids
+            if f.conversion_factor > 0
+        }
+
+        if not custom_factors or (self.id not in custom_factors and to_unit.id not in custom_factors):
+            return super()._compute_quantity(qty, to_unit, round, rounding_method, raise_if_failure)
+
+        self.ensure_one()
+        if self == to_unit:
+            return qty
+
+        from_factor = custom_factors.get(self.id, self.factor)
+        to_factor = custom_factors.get(to_unit.id, to_unit.factor) if to_unit else 1.0
+
+        amount = qty * from_factor
+        if to_unit:
+            amount = amount / to_factor
+
+        if to_unit and round:
+            amount = tools.float_round(amount, precision_rounding=to_unit.rounding, rounding_method=rounding_method)
+
+        return amount
+
+    def read(self, fields=None, load='_classic_read'):
+        """
+        Override read to inject custom conversion factors if product_id is in context.
+        This fixes the display in the UoM dropdown widget (many2one_uom).
+        """
+        res = super().read(fields=fields, load=load)
+        product_id = self._get_product_id_from_context()
+
+        if not product_id or not fields or ('factor' not in fields and 'relative_factor' not in fields):
+            return res
+
+        res_model = self.env.context.get('product_model') or self.env.context.get('active_model') or 'product.product'
+        if res_model not in ['product.product', 'product.template']:
+            res_model = 'product.product'
+
+        product = self.env[res_model].browse(product_id).exists()
+
+        if not product:
+            other_model = 'product.template' if res_model == 'product.product' else 'product.product'
+            product = self.env[other_model].browse(product_id).exists()
+
+        if not product:
+            return res
+
+        template = product if product._name == 'product.template' else product.product_tmpl_id
+        if not template:
+            return res
+
+        custom_factors = {
+            f.uom_id.id: f.conversion_factor
+            for f in template.uom_factor_ids
+            if f.conversion_factor > 0
+        }
+
+        if not custom_factors:
+            return res
+
+        for vals in res:
+            uom_id = vals.get('id')
+            if uom_id in custom_factors:
+                custom_factor = custom_factors[uom_id]
+                if 'factor' in vals:
+                    vals['factor'] = custom_factor
+                if 'relative_factor' in vals:
+                    vals['relative_factor'] = custom_factor
+
+        return res
+
+
+===== FILE: setup_loka/models/stock_move.py =====
+from odoo import models, fields, api, tools
+from odoo.tools.misc import groupby
+from odoo.tools.float_utils import float_compare
+
+
+class StockMove(models.Model):
+    _inherit = 'stock.move'
+
+    @api.depends('product_id', 'product_uom', 'product_uom_qty', 'state')
+    def _compute_product_qty(self):
+        """Hitung jumlah stok dasar menggunakan faktor konversi khusus."""
+        for move in self:
+            if not move.product_id or not move.product_uom:
+                move.product_qty = move.product_uom._compute_quantity(
+                    move.product_uom_qty, move.product_id.uom_id, rounding_method='HALF-UP')
+                continue
+
+            # Cek faktor konversi khusus
+            factor_record = self.env['product.uom.factor'].search([
+                ('product_id', '=', move.product_id.product_tmpl_id.id),
+                ('uom_id', '=', move.product_uom.id)
+            ], limit=1)
+
+            if factor_record and factor_record.conversion_factor > 0:
+                # Base Qty = Alt Qty * Conversion Factor
+                move.product_qty = move.product_uom_qty * factor_record.conversion_factor
+            else:
+                move.product_qty = move.product_uom._compute_quantity(
+                    move.product_uom_qty, move.product_id.uom_id, rounding_method='HALF-UP')
+
+    def _action_assign(self, force_qty=False):
+        """Reservasi stok dengan konteks konversi yang benar."""
+        for product, moves in groupby(self, key=lambda m: m.product_id):
+            moves_recordset = self.env['stock.move'].concat(*moves)
+            if product:
+                super(StockMove, moves_recordset.with_context(
+                    product_id=product.id,
+                    product_model='product.product'
+                ))._action_assign(force_qty=force_qty)
+            else:
+                super(StockMove, moves_recordset)._action_assign(force_qty=force_qty)
+        return True
+
+    @api.depends('move_line_ids.quantity', 'move_line_ids.product_uom_id')
+    def _compute_quantity(self):
+        """Hitung jumlah reservasi dengan konteks produk."""
+        for move in self:
+            if not move.product_id:
+                move.quantity = move._quantity_sml()
+                continue
+            
+            # Use product context for the sum calculation
+            move.quantity = move.with_context(
+                product_id=move.product_id.id,
+                product_model='product.product'
+            )._quantity_sml()
+
+    @api.depends('product_id', 'product_qty', 'picking_type_id', 'quantity', 'priority', 'state', 'product_uom_qty', 'location_id')
+    def _compute_forecast_information(self):
+        """Pastikan informasi stok ramalan (forecasting) menggunakan konteks produk."""
+        for product, moves in groupby(self, key=lambda m: m.product_id):
+            moves_recordset = self.env['stock.move'].concat(*moves)
+            if product:
+                super(StockMove, moves_recordset.with_context(
+                    product_id=product.id,
+                    product_model='product.product'
+                ))._compute_forecast_information()
+            else:
+                super(StockMove, moves_recordset)._compute_forecast_information()
+
+    @api.depends('state', 'product_id', 'product_qty', 'location_id')
+    def _compute_product_availability(self):
+        """Hitung ketersediaan produk untuk tampilan view."""
+        for move in self:
+            if move.state == 'done':
+                move.availability = move.product_qty
+            else:
+                if move.product_id:
+                    # Get available quantity in base UoM
+                    total_availability = self.env['stock.quant']._get_available_quantity(move.product_id, move.location_id)
+                    # Compare against move.product_qty (which is already converted to base UoM in our override)
+                    move.availability = min(move.product_qty, total_availability)
+                else:
+                    move.availability = 0.0
+
+
+class StockMoveLine(models.Model):
+    _inherit = 'stock.move.line'
+
+    @api.depends('quantity', 'product_uom_id', 'product_id')
+    def _compute_quantity_product_uom(self):
+        """Hitung jumlah stok dasar pada baris pengerjaan (move lines)."""
+        for line in self:
+            if not line.product_id or not line.product_uom_id:
+                line.quantity_product_uom = line.product_uom_id._compute_quantity(
+                    line.quantity, line.product_id.uom_id, rounding_method='HALF-UP')
+                continue
+
+            # Cek faktor konversi khusus
+            factor_record = self.env['product.uom.factor'].search([
+                ('product_id', '=', line.product_id.product_tmpl_id.id),
+                ('uom_id', '=', line.product_uom_id.id)
+            ], limit=1)
+
+            if factor_record and factor_record.conversion_factor > 0:
+                # Base Qty = Alt Qty * Conversion Factor
+                line.quantity_product_uom = line.quantity * factor_record.conversion_factor
+            else:
+                line.quantity_product_uom = line.product_uom_id._compute_quantity(
+                    line.quantity, line.product_id.uom_id, rounding_method='HALF-UP')
+
+
+===== FILE: setup_loka/models/__init__.py =====
+from . import product
+from . import product_uom_factor
+from . import sale_order
+from . import purchase_order
+from . import stock_move
+from . import uom
+
+
+===== FILE: setup_loka/models/sale_order.py =====
+from odoo import models, fields, api
+
+class SaleOrderLine(models.Model):
+    _inherit = 'sale.order.line'
+
+    @api.onchange('product_uom_id', 'product_id')
+    def _onchange_product_uom_custom_price(self):
+        """Set harga otomatis jika satuan alternatif memiliki harga khusus."""
+        if not self.product_id or not self.product_uom_id:
+            return
+
+        # Cari harga khusus di faktor konversi
+        factor = self.env['product.uom.factor'].search([
+            ('product_id', '=', self.product_id.product_tmpl_id.id),
+            ('uom_id', '=', self.product_uom_id.id)
+        ], limit=1)
+
+        if factor and factor.price > 0:
+            self.price_unit = factor.price
+
+    @api.depends('product_id', 'product_id.uom_id', 'product_id.uom_factor_ids.uom_id')
+    def _compute_allowed_uom_ids(self):
+        """Masukkan satuan alternatif dalam daftar pilihan."""
+        super()._compute_allowed_uom_ids()
+        for line in self:
+            if line.product_id:
+                # Tambah satuan dari faktor konversi
+                custom_uoms = line.product_id.product_tmpl_id.uom_factor_ids.mapped('uom_id')
+                line.allowed_uom_ids |= custom_uoms
+
+    def _action_launch_stock_rule(self, **kwargs):
+        """Pastikan satuan tetap terjaga jika ada faktor konversi khusus."""
+        has_custom_factor = any(
+            line.product_id.product_tmpl_id.uom_factor_ids.filtered(lambda f: f.uom_id == line.product_uom_id)
+            for line in self if line.product_id
+        )
+        if has_custom_factor:
+            return super(SaleOrderLine, self.with_context(force_uom_propagation=True))._action_launch_stock_rule(**kwargs)
+        return super()._action_launch_stock_rule(**kwargs)
+
+
+===== FILE: setup_loka/__manifest__.py =====
+{
+    "name": "Setup Loka(retail)",
+    "version": "1.0",
+    "summary": "Konfigurasi otomatis: bahasa, invoice, sales, inventory, purchase, dan CoreTax E-Faktur",
+    "description": """
+Modul ini mengatur konfigurasi awal Odoo untuk Indonesia secara otomatis:
+
+- Pengaturan modul utama (Invoice, Sales, Inventory, Purchase)
+- Aktivasi Bahasa Indonesia
+- Pengaturan negara dan mata uang Rupiah (IDR)
+- Pemuatan Chart of Accounts (CoA) & Pajak Indonesia
+- Integrasi CoreTax E-Faktur
+    """,
+    "author": "Loka",
+    "category": "Localization",
+    "depends": [
+        "base",
+        "uom",
+        "product",
+        "stock",
+        "sale_management",
+        "purchase",
+        "l10n_id",
+        "l10n_id_efaktur_coretax",
+    ],
+    "data": [
+        "security/ir.model.access.csv",
+        "data/res_users.xml",
+        "data/res_currency.xml",
+        "data/res_company.xml",
+        "data/uom.xml",
+        "views/product_views.xml",
+        "views/sale_order_views.xml",
+        "views/purchase_order_views.xml",
+    ],
+    "post_init_hook": "post_init_hook",
+    "installable": True,
+    "application": False,
+    "license": "LGPL-3",
+}

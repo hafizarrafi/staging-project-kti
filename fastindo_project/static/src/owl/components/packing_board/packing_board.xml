@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="fastindo_project.PackingBoard">
+
+  <t t-if="state.loading">
+    <div class="fp-pb-loading text-muted p-3">
+      <i class="fa fa-spinner fa-spin me-2"/>Memuat data packing...
+    </div>
+  </t>
+
+  <t t-if="!state.loading">
+    <div class="fp-packing-board">
+      
+      <!-- ══ BOARD ACTIONS (Undo/Redo) ══ -->
+      <div class="fp-board-header d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex gap-4">
+          <div class="fp-header-stat">
+            <span class="text-muted small">Total Box :</span>
+            <span class="fw-bold ms-1" t-esc="state.boxes.length"/>
+          </div>
+          <div class="fp-header-stat">
+            <span class="text-muted small">Total Berat :</span>
+            <span class="fw-bold ms-1" t-esc="formatQty(state.totalWeight)"/>
+            <span class="fw-bold ms-1">kg</span>
+          </div>
+          <div class="fp-header-stat" t-if="state.estimatedShippingCost">
+            <span class="text-muted small">Estimasi Ongkir :</span>
+            <span class="fw-bold ms-1" t-esc="formatCurrency(state.estimatedShippingCost)"/>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button
+            class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+            t-att-disabled="!state.splitDialog.canUndo"
+            t-on-click="undo"
+            title="Undo (Ctrl+Z)"
+          >
+            <i class="fa fa-undo"/> Undo
+          </button>
+          <button
+            class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+            t-att-disabled="!state.splitDialog.canRedo"
+            t-on-click="redo"
+            title="Redo (Ctrl+Y)"
+          >
+            <i class="fa fa-repeat"/> Redo
+          </button>
+        </div>
+      </div>
+
+      <t t-if="!hasBoxes">
+        <div class="fp-pb-empty text-muted p-4 text-center">
+          <i class="fa fa-archive fa-2x mb-2 d-block"/>
+          Belum ada box. Jalankan <strong>Smart Packing</strong> terlebih dahulu.
+        </div>
+      </t>
+
+      <t t-if="hasBoxes">
+
+        <!-- ══ STAGED ITEM AREA (muncul setelah split) ══ -->
+        <t t-if="state.stagedLines.length">
+          <div class="fp-staged-area alert alert-warning d-flex flex-wrap align-items-center gap-3 mb-3">
+            <i class="fa fa-hand-paper-o"/>
+            <span class="fw-bold small">Seret item ini ke box tujuan:</span>
+            <t t-foreach="state.stagedLines" t-as="staged" t-key="staged.id">
+              <div
+                class="fp-staged-chip bg-white shadow-sm"
+                draggable="true"
+                t-on-dragstart="(ev) => this.onStagedDragStart(ev, staged.id)"
+                t-on-dragend="this.onDragEnd"
+              >
+                <i class="fa fa-cube me-1 text-muted"/>
+                <t t-esc="staged.product_name"/>
+                <span class="badge bg-warning text-dark ms-2">
+                  <t t-esc="formatQty(staged.qty)"/>
+                  <small class="ms-1" t-esc="staged.uom"/>
+                </span>
+              </div>
+            </t>
+          </div>
+        </t>
+
+        <!-- ══ BOXES GRID ══ -->
+        <div class="fp-boxes-grid">
+          <t t-foreach="state.boxes" t-as="box" t-key="box.id">
+
+            <div
+              t-att-class="'fp-box-card card status-' + box.fill_status"
+              t-on-dragover="(ev) => this.onDragOver(ev, box.id)"
+              t-on-dragleave="this.onDragLeave"
+              t-on-drop="(ev) => this.onDrop(ev, box.id)"
+            >
+              <!-- Box header -->
+              <div class="card-header d-flex align-items-center justify-content-between py-2 px-3">
+                <span class="fw-bold small">
+                  <i class="fa fa-archive me-1"/>
+                  <t t-esc="box.name"/>
+                </span>
+                <div class="d-flex align-items-center gap-2">
+                  <t t-if="box.total_weight">
+                    <span class="text-muted small fw-normal me-1">
+                      <t t-esc="formatQty(box.total_weight)"/>kg
+                    </span>
+                  </t>
+                  <t t-if="box.total_qty == 0">
+                    <button class="fp-remove-pkg-btn p-0" title="Hapus Box Kosong" t-on-click="(ev) => this.removeEmptyPackage(ev, box.id)">
+                      <i class="fa fa-trash-o"/>
+                    </button>
+                  </t>
+                  <span class="badge rounded-pill border small fw-normal">
+                    <t t-esc="formatQty(box.total_qty)"/> / 12
+                  </span>
+                </div>
+              </div>
+
+              <!-- Item rows -->
+              <div class="card-body p-0">
+                <t t-if="!box.lines.length">
+                  <div class="text-muted small p-3 fst-italic">
+                    <i class="fa fa-inbox me-1"/> Kosong — seret item ke sini
+                  </div>
+                </t>
+                <t t-foreach="box.lines" t-as="line" t-key="line.id">
+                  <!--
+                    IMPORTANT: The draggable <div> and the scissors <button> are siblings.
+                    Dragging the row moves the whole line.
+                    Clicking the button opens the split dialog WITHOUT triggering drag.
+                  -->
+                  <div
+                    class="fp-item-row d-flex align-items-center px-3 py-2 border-bottom"
+                    draggable="true"
+                    t-on-dragstart="(ev) => this.onDragStart(ev, line.id)"
+                    t-on-dragend="this.onDragEnd"
+                  >
+                    <!-- Name -->
+                    <span class="fp-item-name flex-grow-1 text-truncate small">
+                      <i class="fa fa-cube me-1 text-muted"/>
+                      <t t-esc="line.product_name"/>
+                    </span>
+                    <!-- Qty -->
+                    <span class="fw-bold small me-2">
+                      <t t-esc="formatQty(line.qty)"/>
+                      <small class="text-muted ms-1" t-esc="line.uom"/>
+                    </span>
+                    <!--
+                      Scissors button: draggable="false" + stopPropagation on mousedown
+                      prevents the button click from initiating a drag on the parent div.
+                      We use a separate onStopProp method instead of the empty-string handler.
+                    -->
+                    <button
+                      class="btn btn-sm fp-split-btn p-0"
+                      title="Pecah item"
+                      draggable="false"
+                      t-on-mousedown="this.onStopProp"
+                      t-on-click="(ev) => this.openSplitDialog(ev, line)"
+                    >
+                      <i class="fa fa-scissors"/>
+                    </button>
+                  </div>
+
+                </t>
+              </div>
+
+            </div>
+          </t>
+          
+          <!-- Add Empty Box placeholder -->
+          <t t-if="!props.readonly">
+            <div class="fp-add-box-card card d-flex align-items-center justify-content-center p-4 border-dashed" t-on-click="this.addEmptyPackage">
+              <div class="text-center text-muted">
+                <i class="fa fa-plus-circle fa-2x mb-2 d-block"/>
+                <span class="fw-bold small">Tambah Box</span>
+              </div>
+            </div>
+          </t>
+
+        </div>
+      </t>
+    </div>
+
+    <!-- ══ SPLIT DIALOG ══ -->
+    <t t-if="state.splitDialog.open">
+      <div class="fp-dialog-backdrop" t-on-click="this.closeSplitDialog"/>
+      <div
+        t-att-class="'fp-dialog card shadow-lg' + (state.splitDialog.isDragging ? ' is-dragging' : '')"
+        t-att-style="state.splitDialog.pos.x ? ('top: ' + state.splitDialog.pos.y + 'px; left: ' + state.splitDialog.pos.x + 'px; transform: none;') : ''"
+      >
+        <div
+            class="card-header d-flex align-items-center justify-content-between"
+            t-on-pointerdown="this.onDialogPointerDown"
+            t-on-pointermove="this.onDialogPointerMove"
+            t-on-pointerup="this.onDialogPointerUp"
+        >
+          <span class="fw-bold pe-none">
+            <i class="fa fa-scissors me-2"/>Pecah Item
+          </span>
+          <button class="btn-close" t-on-click="this.closeSplitDialog"/>
+        </div>
+        <div class="card-body">
+          <div class="fw-bold mb-1" t-esc="state.splitDialog.productName"/>
+          <div class="text-muted small mb-3">
+            Total qty: <t t-esc="formatQty(state.splitDialog.maxQty)"/>
+          </div>
+
+          <!-- Quick half -->
+          <t t-set="is_odd" t-value="isOdd(state.splitDialog.maxQty)"/>
+          <button
+            t-att-class="'btn btn-sm w-100 mb-3 ' + (is_odd ? 'btn-secondary opacity-50' : 'btn-primary')"
+            t-att-disabled="is_odd"
+            t-on-click="this.doSplitHalf"
+          >
+            <i class="fa fa-scissors me-1"/>
+            <t t-if="!is_odd">
+              Split Half (<t t-esc="formatQty(state.splitDialog.maxQty / 2)"/>)
+            </t>
+            <t t-else="">
+              item berjumlah ganjil silahkan split dengan jumlah qty
+            </t>
+          </button>
+
+          <div class="text-center text-muted small mb-3">— atau masukkan qty —</div>
+
+          <div class="input-group input-group-sm">
+            <input
+              type="number"
+              class="form-control"
+              placeholder="Qty..."
+              t-att-max="state.splitDialog.maxQty"
+              min="0.001"
+              step="any"
+              t-att-value="state.splitDialog.inputQty"
+              t-on-input="this.onSplitQtyInput"
+            />
+            <button class="btn btn-success" t-on-click="this.doSplitCustom">
+              <i class="fa fa-check"/>
+            </button>
+          </div>
+          <div class="text-muted small mt-2 mb-3">
+            Setelah split, seret item kuning ke box tujuan.
+          </div>
+
+          <!-- Opsi Lanjutan Toggle -->
+          <div class="border-top pt-3">
+            <a href="#" class="text-decoration-none small d-flex align-items-center justify-content-between" t-on-click.prevent="this.toggleAdvanced">
+              <span>Opsi Lanjutan (Langsung ke Box)</span>
+              <i t-att-class="'fa fa-chevron-' + (state.splitDialog.showAdvanced ? 'up' : 'down')"/>
+            </a>
+
+            <t t-if="state.splitDialog.showAdvanced">
+              <div class="mt-3">
+                <label class="small fw-bold mb-1">Pilih Box Tujuan:</label>
+                <select class="form-select form-select-sm mb-3" t-on-change="this.onTargetBoxChange" t-att-value="state.splitDialog.targetBoxId">
+                  <t t-foreach="state.boxes" t-as="box" t-key="box.id">
+                    <option t-att-value="box.id">
+                      <t t-esc="box.name"/> (<t t-esc="formatQty(box.total_qty)"/> / 12)
+                    </option>
+                  </t>
+                </select>
+              </div>
+            </t>
+          </div>
+        </div>
+      </div>
+    </t>
+
+  </t>
+
+</t>
+
+</templates>

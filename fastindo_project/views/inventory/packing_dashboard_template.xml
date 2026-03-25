@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="packing_dashboard">
+        <div class="o_fastindo_packing_dashboard">
+            <t t-foreach="doc.package_ids.sorted(key=lambda p: p.name)" t-as="pkg">
+                <div t-attf-class="o_fastindo_package_card status-#{pkg.fill_status}">
+                    <div class="card-header">
+                        <div class="header-left">
+                            <i class="fa fa-archive"/>
+                            <strong t-esc="pkg.name"/>
+                        </div>
+                        <div class="header-right">
+                            <span class="badge rounded-pill">
+                                <t t-esc="pkg.total_inner_qty"/> / 12 Item
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Produk</th>
+                                    <th class="text-end">Jumlah</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="pkg.move_line_ids" t-as="line">
+                                    <td><t t-esc="line.product_id.display_name"/></td>
+                                    <td class="text-end font-weight-bold">
+                                        <t t-esc="line.quantity"/>
+                                        <small class="text-muted ml-1"><t t-esc="line.product_uom_id.name"/></small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </template>
+</odoo>

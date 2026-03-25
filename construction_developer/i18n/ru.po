@@ -1,0 +1,385 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# * construction_developer
+#
+# "Anastasiia Koroleva (koan)" <koan@odoo.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-01-15 12:05+0000\n"
+"PO-Revision-Date: 2026-01-27 22:45+0000\n"
+"Last-Translator: \"Anastasiia Koroleva (koan)\" <koan@odoo.com>\n"
+"Language-Team: Russian <https://translate.odoo.com/projects/odoo-19/"
+"construction_developer/ru/>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 5.14.3\n"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_portal_content_inherit
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_report_document_inherit
+msgid "<strong>Contract Type </strong>"
+msgstr "<strong>Тип договора </strong>"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_77
+msgid "Anti-corrosion protective coat"
+msgstr "Антикоррозийное защитное покрытие"
+
+#. module: construction_developer
+#. odoo-javascript
+#: code:addons/construction_developer/static/src/widgets/apply_to_section_widget.js:0
+msgid "Apply to section"
+msgstr "Применить к разделу"
+
+#. module: construction_developer
+#. odoo-javascript
+#: code:addons/construction_developer/static/src/widgets/apply_to_section_widget.js:0
+msgid "Apply to subsection"
+msgstr "Применить к подразделу"
+
+#. module: construction_developer
+#: model:sale.order.template.line,name:construction_developer.sale_order_template_line_70
+msgid "Carport"
+msgstr "Навес для автомобиля"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_65
+msgid "Compacted sand"
+msgstr "Уплотненный песок"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_80
+msgid "Concrete"
+msgstr "Бетон"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_79
+msgid "Connection pipe"
+msgstr "Соединительная труба"
+
+#. module: construction_developer
+#: model:base.automation,name:construction_developer.automation_initialize_sales_order_line_sequence_on_sales_order_create
+#: model:ir.actions.server,name:construction_developer.action_initialize_sales_order_line_sequence_on_sales_order_create
+msgid ""
+"Construction: Initialize Sales Order Line Sequence on Sales Order create"
+msgstr ""
+"Строительство: Инициализировать последовательность строк заказа на продажу "
+"при создании заказа на продажу"
+
+#. module: construction_developer
+#: model:ir.actions.server,name:construction_developer.action_sol_update_progress_increment_on_change
+msgid "Construction: Update Progress Increment on Quantity Increment change"
+msgstr ""
+"Строительство: Обновить прирост прогресса при изменении прироста количества"
+
+#. module: construction_developer
+#: model:ir.actions.server,name:construction_developer.action_sol_update_qty_delivered
+msgid "Construction: Update Quantity Delivered"
+msgstr "Строительство: Обновить фактически поставленное количество"
+
+#. module: construction_developer
+#: model:ir.actions.server,name:construction_developer.action_sol_update_quantity_increment_on_change
+msgid "Construction: Update Quantity Increment on Progress Increment change"
+msgstr ""
+"Строительство: Обновить прирост количества при изменении прироста прогресса"
+
+#. module: construction_developer
+#: model:ir.actions.server,name:construction_developer.action_sol_update_section_progress
+msgid "Construction: Update Quantity Increment on section button click"
+msgstr ""
+"Строительство: Обновить прирост количества при нажатии на кнопку раздела"
+
+#. module: construction_developer
+#: model:base.automation,name:construction_developer.automation_update_progress_increment_on_change
+msgid ""
+"Construction: Update Sale Order Line Progress Increment on Quantity "
+"Increment change"
+msgstr ""
+"Строительство: Обновить прирост прогресса в строке заказа на продажу при "
+"изменении прироста количества"
+
+#. module: construction_developer
+#: model:base.automation,name:construction_developer.automation_update_quantity_increment_on_change
+msgid ""
+"Construction: Update Sale Order Line Quantity Increment on Progress "
+"Increment change"
+msgstr ""
+"Строительство: Обновить прирост количества в строке заказа на продажу при "
+"изменении прироста прогресса"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_sol_contract_type
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_so_contract_type
+msgid "Contract Type"
+msgstr "Тип договора"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_73
+msgid "Corrugated metal sheet"
+msgstr "Профнастил"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_current_progress
+msgid "Current Progress"
+msgstr "Текущий прогресс"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_delivered_progress
+msgid "Delivered Progress"
+msgstr "Объем сданных работ"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_display_button
+msgid "Display the section/subsection button"
+msgstr "Отображать кнопку раздела/подраздела"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_72
+msgid "Downspout accessory"
+msgstr "Комплектующие для водосточной трубы"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_78
+msgid "Drain channel with grid"
+msgstr "Дренажный канал с решеткой"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_66
+msgid "Drainage System"
+msgstr "Дренажная система"
+
+#. module: construction_developer
+#: model:ir.model.fields.selection,name:construction_developer.field_sale_order_line_sol_contract_type_selection_fixed_price
+#: model:ir.model.fields.selection,name:construction_developer.field_sale_order_so_contract_type_selection_fixed_price
+msgid "Fixed Price"
+msgstr "Фиксированная цена"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_67
+msgid "Foundation Footing"
+msgstr "Фундамент"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Fully Invoiced"
+msgstr "Полностью выставлен счет"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_63
+msgid "Geotextile fabric"
+msgstr "Геотекстиль"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_64
+msgid "Gravel 0.25"
+msgstr "Гравий (фракция 0.25)"
+
+#. module: construction_developer
+#: model:sale.order.template.line,name:construction_developer.sale_order_template_line_69
+msgid "Ground"
+msgstr "Грунт"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_62
+msgid "Ground Preparation"
+msgstr "Подготовка грунта"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_68
+msgid "Gutter"
+msgstr "Водосточный желоб"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "In Progress"
+msgstr "В процессе"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_is_deliverable
+msgid "Is a deliverable Product"
+msgstr "Является поставляемым товаром"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_is_undeliverable
+msgid "Is an undeliverable Product"
+msgstr "Является непоставляемым товаром"
+
+#. module: construction_developer
+#: model:sale.order.template.line,name:construction_developer.sale_order_template_line_68
+msgid "Material order, staff management, coordination, customer meetings"
+msgstr ""
+"Заказ материалов, управление персоналом, координация, встречи с клиентами"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Not Started"
+msgstr "Не начат"
+
+#. module: construction_developer
+#: model:ir.model.fields.selection,name:construction_developer.field_sale_order_line_sol_contract_type_selection_open_book
+#: model:ir.model.fields.selection,name:construction_developer.field_sale_order_so_contract_type_selection_open_book
+msgid "Open Book"
+msgstr "Открытая смета"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Order"
+msgstr "Заказ"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_71
+msgid "PVC gutter"
+msgstr "Водосточный желоб (ПВХ)"
+
+#. module: construction_developer
+#: model:ir.model.fields.selection,name:construction_developer.field_sale_order_so_contract_type_selection_per_line
+msgid "Per Line"
+msgstr "Построчно"
+
+#. module: construction_developer
+#: model:ir.model.fields,help:construction_developer.field_sale_order_so_contract_type
+msgid ""
+"Precise on the quotation document the contract type:\n"
+"- Unspecified: No specific billing terms will be displayed on this "
+"document.\n"
+"- Fixed Price: A mention is displayed precising the contract type is fixed "
+"price.\n"
+"- Open Book: A mention is displayed precising the contract type is open "
+"book.\n"
+"- Per Line: Mixed billing logic where you define individually for each line "
+"item."
+msgstr ""
+"Укажите в документе коммерческого предложения тип договора:\n"
+"– Не указано: в документе не будут отображаться специфические условия "
+"выставления счетов.\n"
+"– Фиксированная цена: отображается упоминание о том, что тип договора "
+"предполагает фиксированную цену.\n"
+"– Открытая смета: отображается упоминание о том, что тип договора – «"
+"открытая смета».\n"
+"– Построчно: смешанная логика расчетов, при которой условия определяются "
+"индивидуально для каждой позиции."
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Product"
+msgstr "Товар"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_service_policy
+msgid "Product Service Policy"
+msgstr "Политика обслуживания продукции"
+
+#. module: construction_developer
+#: model:ir.actions.act_window,name:construction_developer.action_progress_view
+#: model:ir.embedded.actions,name:construction_developer.construction_embedded_action_sales_order_lines
+#: model:ir.embedded.actions,name:construction_developer.construction_embedded_action_sales_order_lines_dashboard
+msgid "Progress"
+msgstr "Прогресс"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_progress_increment
+msgid "Progress Increment"
+msgstr "Прирост прогресса"
+
+#. module: construction_developer
+#: model:sale.order.template.line,name:construction_developer.sale_order_template_line_71
+msgid "Project Management"
+msgstr "Управление проектами"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_list_view
+msgid "Qty"
+msgstr "Кол-во"
+
+#. module: construction_developer
+#: model:ir.model.fields,field_description:construction_developer.field_sale_order_line_x_quantity_increment
+msgid "Quantity Increment"
+msgstr "Прирост количества"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_69
+msgid "Roofing"
+msgstr "Кровля"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_74
+msgid "Roofing fixation screws"
+msgstr "Кровельные саморезы"
+
+#. module: construction_developer
+#: model:project.project,name:construction_developer.project_project_16
+msgid "S00003 - Project Template"
+msgstr "S00003 – Шаблон проектов"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Sales Order Lines that are at 100% progress"
+msgstr "Строки заказа со 100% прогрессом"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Sales Order Lines that are between 0 and 100% progress"
+msgstr "Строки заказа с прогрессом от 0 до 100%"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Sales Order Lines that have not been started yet (0% progress)"
+msgstr "Строки заказа, работа по которым еще не начата (0% прогресса)"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Search Sales Order"
+msgstr "Поиск заказа на продажу"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_76
+msgid "Steel beam (matching profile)"
+msgstr "Стальная балка (соответствующего профиля)"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_75
+msgid "Steel post (galvanized, coated)"
+msgstr "Стальная стойка (оцинкованная, с покрытием)"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_81
+msgid "Steel reinforcement mesh"
+msgstr "Армирующая стальная сетка"
+
+#. module: construction_developer
+#: model:product.template,name:construction_developer.product_template_70
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "Structure"
+msgstr "Конструкция"
+
+#. module: construction_developer
+#: model:project.project,label_tasks:construction_developer.project_project_16
+msgid "Tasks"
+msgstr "Задачи"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_filter
+msgid "The structure Sale Order Lines"
+msgstr "Структура строк заказа"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_portal_content_inherit
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_report_document_inherit
+msgid "Type"
+msgstr "Тип"
+
+#. module: construction_developer
+#: model:ir.model.fields.selection,name:construction_developer.field_sale_order_so_contract_type_selection_unspecified
+msgid "Unspecified"
+msgstr "Не указано"
+
+#. module: construction_developer
+#: model_terms:ir.ui.view,arch_db:construction_developer.sale_order_list_view
+msgid "Update Delivery"
+msgstr "Обновить данные о выполнении"

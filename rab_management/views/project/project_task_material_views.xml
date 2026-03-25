@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List view for Project Task Material -->
+    <record id="view_project_task_material_list" model="ir.ui.view">
+        <field name="name">project.task.material.list</field>
+        <field name="model">project.task.material</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="product_id"/>
+                <field name="total_qty" readonly="1"/>
+                <field name="qty_on_site"/>
+                <field name="qty_beli" readonly="1"/>
+                <field name="uom_id"/>
+                <field name="source_path" string="Source"/>
+            </list>
+
+        </field>
+    </record>
+
+</odoo>

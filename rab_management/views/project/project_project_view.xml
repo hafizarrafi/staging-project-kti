@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <odoo>
+    
+
+    <record id="view_project_project_form_inherit_rab" model="ir.ui.view">
+        <field name="name">project.project.form.inherit.rab</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+
+                <button
+                    name="action_create_rab_from_material"
+                    type="object"
+                    string="Buat RAB"
+                    confirm="Pastikan Semua Repair list sudah terinput"
+                    class="btn-primary"
+                    invisible="rab_id != False"
+                />
+                
+                <button
+                    name="action_create_rab_from_material"
+                    type="object"
+                    string="Update Data ke RAB"
+                    confirm="Anda akan memperbarui data di RAB Draft. Lanjutkan?"
+                    class="btn-primary"
+                    invisible="rab_state != 'draft'"
+                />
+
+                <button
+                    name="action_create_sale_order"
+                    type="object"
+                    string="Buat SO"
+                    class="btn-primary"
+                    invisible="sale_order_id != False"
+                />
+                
+                <button
+                    name="action_create_sale_order"
+                    type="object"
+                    string="Buat SO"
+                    class="btn-secondary"
+                    invisible="sale_order_id == False"
+                />
+
+            </xpath>
+            <!-- Add RAB field after partner_id -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="can_access_rab" invisible="1"/>
+                <field name="can_access_so" invisible="1"/>
+                
+                <!-- untuk yang berhak akses rab -->
+                <field name="rab_id" readonly="1" invisible="not can_access_rab"/>
+                <field name="rab_id" readonly="1" options="{'no_open': True}" invisible="can_access_rab"/>
+                
+                <!-- Suntuk yang berhak akses so -->
+                <field name="sale_order_id" readonly="1" invisible="not can_access_so"/>
+                <field name="sale_order_id" readonly="1" options="{'no_open': True}" invisible="can_access_so"/>
+            </xpath>
+            
+           <xpath expr="//page[@name='description']" position="before">
+                <page string="Ringkasan Estimasi" name="summary">
+                    <group>
+                        <group string="Ringkasan Biaya">
+                            <field name="currency_id" invisible="1"/>
+                            <!-- Hidden fields for computation/visibility -->
+                            <field name="total_additional_material" invisible="1"/>
+                            <field name="total_additional_equipment" invisible="1"/>
+
+                            <label for="total_material" string="1. Material"/>
+                            <div class="o_row_no_wrap">
+                                <field name="total_material" widget="monetary" readonly="1" class="oe_inline"/>
+                                <div class="text-success ms-3" >
+                                    <span>(Incl. Add Material: </span>
+                                    <field name="total_additional_material" widget="monetary" class="oe_inline"/>
+                                    <span>)</span>
+                                </div>
+                            </div>
+                            <label for="total_equipment" string="2. Equipment &amp; Tools"/>
+                            <div class="o_row_no_wrap">
+                                <field name="total_equipment" widget="monetary" class="oe_inline"/>
+                                <div class="text-success ms-3" >
+                                    <span>(Incl. Add Equipment: </span>
+                                    <field name="total_additional_equipment" widget="monetary" class="oe_inline"/>
+                                    <span>)</span>
+                                </div>
+                            </div>
+                            <label for="total_manpower" string="3. Man Power"/>
+                            <div>
+                                <field name="total_manpower" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_operasional" string="4. Operasional"/>
+                            <div>
+                                <field name="total_operasional" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_mobdemob" string="5. Mob Demob"/>
+                            <div>
+                                <field name="total_mobdemob" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="kawat_las_total_harga" string="6. Kawat las Steelwork"/>
+                            <div class="o_row_no_wrap">
+                                <field name="kawat_las_total_harga" widget="monetary" class="oe_inline"/>
+                                <div class="text-muted ms-3" invisible="kawat_las_kebutuhan_dus == 0">
+                                    <span>(</span>
+                                    <field name="kawat_las_kebutuhan_dus" class="oe_inline" readonly="1"/>
+                                    <span> Dus)</span>
+                                </div>
+                            </div>
+
+                            <label for="rewelding_total_harga" string="7. Kawat las Rewelding"/>
+                            <div class="o_row_no_wrap">
+                                <field name="rewelding_total_harga" widget="monetary" class="oe_inline"/>
+                                <div class="text-muted ms-3" invisible="rewelding_kebutuhan_dus == 0">
+                                    <span>(</span>
+                                    <field name="rewelding_kebutuhan_dus" class="oe_inline" readonly="1"/>
+                                    <span> Dus)</span>
+                                </div>
+                            </div>
+
+                            <label for="total_oksigen" string="8. Oksigen"/>
+                            <div>
+                                <field name="total_oksigen" widget="monetary" class="oe_inline"/>
+                            </div>
+                            <label for="total_lpg" string="9. LPG"/>
+                            <div>
+                                <field name="total_lpg" widget="monetary" class="oe_inline"/>
+                            </div>
+                        </group>
+                        <group string="SO &amp; Margin">
+                            <label for="so_ditagihkan" string="SO Ditagihkan"/>
+                            <div>
+                                <field name="so_ditagihkan" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+                            <label for="total_margin" string="Total Margin"/>
+                            <div>
+                                <field name="total_margin" class="oe_inline" readonly="1"/> %
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- tak pindah kesini total calc nya -->
+                    <group string="Total Perhitungan">
+                        <group>
+                            <field name="total_panjang_las" readonly="1"/>
+                            <field name="total_weight" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_estimasi_replating" readonly="1" widget="monetary"/>
+                            <field name="sub_total_summary" string="Total Estimasi Biaya" readonly="1" widget="monetary"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
+           <xpath expr="//page[@name='summary']" position="after">
+                <page string="Ringkasan Aktual" name="summary_aktual">
+                    <div class="mb-3">
+                        <button
+                            name="action_recompute_aktual"
+                            type="object"
+                            string="Hitung Ulang Aktual"
+                            class="btn-secondary"
+                            icon="fa-refresh"
+                        />
+                    </div>
+                    <group>
+                        <group string="Realisasi Biaya">
+                            <field name="currency_id" invisible="1"/>
+
+                            <label for="aktual_material" string="1. Material"/>
+                            <div>
+                                <field name="aktual_material" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+
+                            <label for="aktual_equipment" string="2. Equipment &amp; Tools"/>
+                            <div>
+                                <field name="aktual_equipment" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+
+                            <label for="aktual_manpower" string="3. Man Power"/>
+                            <div>
+                                <field name="aktual_manpower" widget="monetary" class="oe_inline"/>
+                            </div>
+
+                            <label for="aktual_operasional" string="4. Operasional"/>
+                            <div>
+                                <field name="aktual_operasional" widget="monetary" class="oe_inline"/>
+                            </div>
+
+                            <label for="aktual_mobdemob" string="5. Mob Demob"/>
+                            <div>
+                                <field name="aktual_mobdemob" widget="monetary" class="oe_inline"/>
+                            </div>
+
+                            <label for="aktual_kawat_las" string="6. Kawat Las"/>
+                            <div>
+                                <field name="aktual_kawat_las" widget="monetary" class="oe_inline"/>
+                            </div>
+
+                            <label for="aktual_oksigen" string="7. Oksigen"/>
+                            <div>
+                                <field name="aktual_oksigen" widget="monetary" class="oe_inline"/>
+                            </div>
+
+                            <label for="aktual_lpg" string="8. LPG"/>
+                            <div>
+                                <field name="aktual_lpg" widget="monetary" class="oe_inline"/>
+                            </div>
+                        </group>
+
+                        <group string="Perbandingan &amp; Margin">
+                            <label for="sub_total_summary" string="Total Estimasi"/>
+                            <div>
+                                <field name="sub_total_summary" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+
+                            <label for="sub_total_aktual" string="Total Aktual"/>
+                            <div>
+                                <field name="sub_total_aktual" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+
+                            <label for="variance_aktual" string="Selisih (Over/Under Budget)"/>
+                            <div class="o_row_no_wrap">
+                                <field name="variance_aktual" widget="monetary" class="oe_inline" readonly="1"/>
+                                <span class="ms-2 text-danger" invisible="variance_aktual &lt;= 0">&#9650; Over Budget</span>
+                                <span class="ms-2 text-success" invisible="variance_aktual &gt;= 0">&#9660; Under Budget</span>
+                            </div>
+
+                            <label for="variance_aktual_pct" string="% Selisih"/>
+                            <div>
+                                <field name="variance_aktual_pct" class="oe_inline" readonly="1"/> %
+                            </div>
+
+                            <label for="so_ditagihkan" string="SO Ditagihkan"/>
+                            <div>
+                                <field name="so_ditagihkan" widget="monetary" class="oe_inline" readonly="1"/>
+                            </div>
+
+                            <label for="margin_aktual" string="Margin Aktual"/>
+                            <div>
+                                <field name="margin_aktual" class="oe_inline" readonly="1"/> %
+                            </div>
+                        </group>
+                    </group>
+
+                    <group string="Perbandingan Per Kategori">
+                        <group string="Estimasi">
+                            <field name="total_material" string="1. Material" readonly="1" widget="monetary"/>
+                            <field name="total_equipment" string="2. Equipment &amp; Tools" readonly="1" widget="monetary"/>
+                            <field name="total_manpower" string="3. Man Power" readonly="1" widget="monetary"/>
+                            <field name="total_operasional" string="4. Operasional" readonly="1" widget="monetary"/>
+                            <field name="total_mobdemob" string="5. Mob Demob" readonly="1" widget="monetary"/>
+                            <field name="total_kawat_las" string="6. Kawat Las (Total)" readonly="1" widget="monetary"/>
+                            <field name="total_oksigen" string="7. Oksigen" readonly="1" widget="monetary"/>
+                            <field name="total_lpg" string="8. LPG" readonly="1" widget="monetary"/>
+                        </group>
+                        <group string="Aktual">
+                            <field name="aktual_material" string="1. Material" widget="monetary" readonly="1"/>
+                            <field name="aktual_equipment" string="2. Equipment &amp; Tools" widget="monetary" readonly="1"/>
+                            <field name="aktual_manpower" string="3. Man Power" widget="monetary"/>
+                            <field name="aktual_operasional" string="4. Operasional" widget="monetary"/>
+                            <field name="aktual_mobdemob" string="5. Mob Demob" widget="monetary"/>
+                            <field name="aktual_kawat_las" string="6. Kawat Las" widget="monetary"/>
+                            <field name="aktual_oksigen" string="7. Oksigen" widget="monetary"/>
+                            <field name="aktual_lpg" string="8. LPG" widget="monetary"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Material Proyek" name="material_project">
+                        <button
+                            name="action_sync_project_material"
+                            type="object"
+                            string="Hitung Ulang Material"
+                            class="btn-primary"
+                            
+                        />
+
+                    <field name="material_master_ids"
+                        mode="list"
+                        domain="[('job_type', '=', 'primary')]"
+                        views="[(false, 'list')]"/>
+                    
+                    <group class="oe_subtotal_footer">
+                        <field name="material_total_rab" string="Total RAB" widget="monetary"/>
+                        <field name="material_total_estimasi" string="Total Estimasi" widget="monetary" class="oe_subtotal_footer_separator"/>
+                    </group>
+
+                    <separator string="Material Tambahan" invisible="not additional_material_history_ids"/>
+                    <field name="additional_material_history_ids" readonly="1" invisible="not additional_material_history_ids">
+                        <list>
+                            <field name="product_id"/>
+                            <field name="source" optional="show"/>
+                            <field name="source_details" string="Detail Sumber" optional="show"/>
+                            <field name="total_qty"/>
+                            <field name="qty_beli"/>
+                            <field name="uom_id"/>
+                            <field name="unit_price" string="Harga RAB"/>
+                            <field name="subtotal" string="Subtotal RAB"/>
+                            <field name="subtotal_estimasi" string="Subtotal Estimasi"/>
+                            <field name="rab_id" widget="many2one_clickable" string="Dokumen RAB"/>
+                        </list>
+                    </field>
+
+                    <group class="oe_subtotal_footer" invisible="not additional_material_history_ids">
+                        <field name="material_add_total_rab" string="Total RAB (Add)" widget="monetary"/>
+                        <field name="material_add_total_estimasi" string="Total Estimasi (Add)" widget="monetary" class="oe_subtotal_footer_separator"/>
+                    </group>
+                </page>
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object" name="action_view_all_rabs"
+                    icon="fa-list-alt" invisible="all_rab_count == 0">
+                    <field string="Daftar RAB" name="all_rab_count" widget="statinfo"/>
+                </button>
+            </xpath>
+
+           <xpath expr="//page[@name='material_project']" position="after">
+                <page string="Peralatan &amp; Perkakas" name="equipment_tools">
+                    <field name="equipment_master_ids"
+                        mode="list"
+                        views="[(false, 'list')]"/>
+
+                    <group class="oe_subtotal_footer">
+                        <field name="equipment_total_rab" string="Total RAB" widget="monetary"/>
+                        <field name="equipment_total_estimasi" string="Total Estimasi" widget="monetary" class="oe_subtotal_footer_separator"/>
+                    </group>
+                    
+                    <separator string="Peralatan Tambahan" invisible="not additional_equipment_history_ids"/>
+                    <field name="additional_equipment_history_ids" readonly="1" invisible="not additional_equipment_history_ids">
+                        <list>
+                            <field name="product_id"/>
+                            <field name="source_details" string="Dibuat pada" optional="show"/>
+                            <field name="total_qty"/>
+                            <field name="qty_beli"/>
+                            <field name="uom_id"/>
+                            <field name="unit_price" string="Harga RAB"/>
+                            <field name="subtotal" string="Subtotal RAB"/>
+                            <field name="subtotal_estimasi" string="Subtotal Estimasi"/>
+                            <field name="rab_id" widget="many2one_clickable" string="Dokumen RAB"/>
+                        </list>
+                    </field>
+
+                    <group class="oe_subtotal_footer" invisible="not additional_equipment_history_ids">
+                        <field name="equipment_add_total_rab" string="Total RAB (Add)" widget="monetary"/>
+                        <field name="equipment_add_total_estimasi" string="Total Estimasi (Add)" widget="monetary" class="oe_subtotal_footer_separator"/>
+                    </group>
+                </page>
+        
+                <page string="Steelwork" name="kawat_las">
+                    <group>
+                        <group string="Input Parameter">
+                            <field name="kawat_las_product_id"/>
+                            <field name="kawat_las_tebal_material"/>
+                            <field name="total_panjang_las" string="Panjang Las (Project)" readonly="1"/>
+                            <field name="kawat_las_luas_bevel"/>
+                            <field name="kawat_las_double_bevel"/>
+                            <field name="kawat_las_x2_length"/>
+                        </group>
+                        <group string="Konstanta &amp; Volume">
+                            <field name="kawat_las_berat_massa_jenis"/>
+                            <field name="kawat_las_eff_kawat"/>
+                            <field name="kawat_las_volume"/>
+                            <field name="kawat_las_kebutuhan_kg"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Kebutuhan Pembelian">
+                            <field name="kawat_las_stok_site"/>
+                            <field name="kawat_las_berat_per_dus"/>
+                            <field name="kawat_las_kebutuhan_dus"/>
+                        </group>
+                        <group string="Estimasi Biaya">
+                            <field name="kawat_las_harga_satuan"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="kawat_las_total_harga" widget="monetary" invisible="1"/>
+                            <field name="rab_subtotal_steelwork" widget="monetary"/>
+                            <field name="subtotal_estimasi_steelwork" widget="monetary"/>
+                        </group>
+                    </group>
+                </page>
+
+                <page string="Rewelding" name="rewelding">
+                    <group>
+                        <group string="Input Parameter">
+                            <field name="rewelding_product_id"/>
+                            <field name="rewelding_tebal_material"/>
+                            <field name="rewelding_panjang_las"/>
+                            <field name="rewelding_luas_bevel"/>
+                            <field name="rewelding_double_bevel"/>
+                        </group>
+                        <group string="Konstanta &amp; Volume">
+                            <field name="rewelding_berat_massa_jenis"/>
+                            <field name="rewelding_eff_kawat"/>
+                            <field name="rewelding_volume"/>
+                            <field name="rewelding_kebutuhan_kg"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Kebutuhan Pembelian">
+                            <field name="rewelding_stok_site"/>
+                            <field name="rewelding_berat_per_dus"/>
+                            <field name="rewelding_kebutuhan_dus"/>
+                        </group>
+                        <group string="Estimasi Biaya">
+                            <field name="rewelding_harga_satuan"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="rewelding_total_harga" widget="monetary" invisible="1"/>
+                            <field name="rab_subtotal_rewelding" widget="monetary"/>
+                            <field name="subtotal_estimasi_rewelding" widget="monetary"/>
+                        </group>
+                    </group>
+                </page>
+
+                <page string="Item Tambahan" name="additional_purchase">
+                    <header>
+                        <button name="action_sync_project_material" string="Sinkron dari Task" type="object" class="btn-secondary"/>
+                        <button name="action_create_additional_rab" string="Buat RAB Tambahan" type="object" class="btn-primary"/>
+                    </header>
+                    
+                    <separator string="Material Tambahan (Manual &amp; Sinkron)"/>
+                    <field name="additional_material_ids" context="{'default_item_type': 'material'}">
+                        <list editable="bottom" decoration-info="source == 'task'">
+                            <field name="product_id" domain="[('categ_id.name', '=', 'Material')]" readonly="source == 'task'"/>
+                            <field name="source" readonly="1"/>
+                            <field name="task_id" string="Task Asal" readonly="1" options="{'no_open': True}" invisible="source == 'manual'"/>
+                            <field name="total_weight" string="Volume Estimasi (kg)" readonly="source == 'task'"/>
+                            <field name="product_weight" string="Weight / Unit (kg)" readonly="1"/>
+                            <field name="total_qty" readonly="source == 'task'" force_save="1"/>
+                            <field name="qty_on_site"/>
+                            <field name="qty_beli" readonly="1"/>
+                            <field name="uom_id"/>
+                            <field name="unit_price" string="Harga RAB" readonly="1"/>
+                            <field name="subtotal" string="Subtotal RAB" readonly="1"/>
+                            <field name="subtotal_estimasi" string="Subtotal Estimasi" readonly="1"/>
+                            <field name="item_type" column_invisible="True"/>
+                        </list>
+                    </field>
+
+                    <separator string="Peralatan Tambahan (Manual)"/>
+                    <field name="additional_equipment_ids" context="{'default_item_type': 'equipment'}">
+                        <list editable="bottom" decoration-info="source == 'task'">
+                            <field name="product_id" readonly="source == 'task'"/>
+                            <field name="source_details" string="Detail Sumber" readonly="1"/>
+                            <field name="total_qty" readonly="source == 'task'" force_save="1"/>
+                            <field name="qty_on_site"/>
+                            <field name="qty_beli" readonly="1"/>
+                            <field name="uom_id"/>
+                            <field name="unit_price" string="Harga RAB" readonly="1"/>
+                            <field name="subtotal" string="Subtotal RAB" readonly="1"/>
+                            <field name="subtotal_estimasi" string="Subtotal Estimasi" readonly="1"/>
+                            <field name="item_type" column_invisible="True"/>
+                        </list>
+                    </field>
+                </page>
+                
+            </xpath>
+
+
+
+        </field>
+    </record>
+</odoo>

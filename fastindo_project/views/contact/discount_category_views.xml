@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Form View: Kategori Diskon -->
+    <record id="view_discount_category_form" model="ir.ui.view">
+        <field name="name">discount.category.form</field>
+        <field name="model">discount.category</field>
+        <field name="arch" type="xml">
+            <form string="Kategori Diskon">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_partners"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-users">
+                            <field name="partner_count" widget="statinfo" string="Pelanggan"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nama kategori (misal: VIP, Member A)..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Pengaturan Diskon">
+                            <field name="discount_percentage"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Keterangan">
+                        <field name="description" nolabel="1" placeholder="Keterangan tambahan..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View: Kategori Diskon -->
+    <record id="view_discount_category_list" model="ir.ui.view">
+        <field name="name">discount.category.list</field>
+        <field name="model">discount.category</field>
+        <field name="arch" type="xml">
+            <list string="Kategori Diskon">
+                <field name="name"/>
+                <field name="discount_percentage" string="Diskon (%)"/>
+                <field name="partner_count" string="Pelanggan"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action: Kategori Diskon -->
+    <record id="action_discount_category" model="ir.actions.act_window">
+        <field name="name">Kategori Diskon</field>
+        <field name="res_model">discount.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Buat kategori diskon pertama Anda!
+            </p>
+            <p>
+                Kategori diskon digunakan untuk menentukan persentase diskon
+                yang otomatis diterapkan pada Sales Order pelanggan.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu: Kategori Diskon (di bawah Sales > Konfigurasi) -->
+    <menuitem
+        id="menu_discount_category"
+        name="Kategori Diskon"
+        parent="sale.sale_menu_root"
+        action="action_discount_category"
+        sequence="30"
+        groups="sales_team.group_sale_manager"/>
+
+</odoo>

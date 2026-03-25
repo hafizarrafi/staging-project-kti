@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Extend Sale Order Form: tampilkan Kategori Diskon setelah field pelanggan -->
+    <record id="view_sale_order_form_discount_category" model="ir.ui.view">
+        <field name="name">sale.order.form.discount.category</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Tambah field kategori diskon setelah partner_id -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="discount_category_id"
+                       options="{'no_create': True}"
+                       placeholder="Pilih kategori diskon..."/>
+                <field name="suggested_product_ids" widget="many2many_tags" 
+                       invisible="not suggested_product_ids" readonly="1"/>
+                <button name="action_load_segment_products" string="Quick Add Segment Products" 
+                        type="object" class="btn-link" invisible="not suggested_product_ids"/>
+            </xpath>
+
+            <!-- Hapus pembatasan grup pada kolom Diskon di list baris order -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='discount']" position="attributes">
+                <attribute name="groups"/>
+            </xpath>
+
+            <!-- Add UoM context to allow alternative units display -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//field[@name='product_uom_id']" position="attributes">
+                <attribute name="context">{'product_id': product_id, 'product_model': 'product.product', 'formatted_display_name': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

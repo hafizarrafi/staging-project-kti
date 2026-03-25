@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_form_inherit_fastindo_packing" model="ir.ui.view">
+        <field name="name">stock.picking.form.inherit.fastindo.packing</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_generate_smart_packing"
+                        string="Smart Packing"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state not in ['assigned', 'confirmed'] or picking_type_code != 'outgoing'"
+                        groups="stock.group_stock_user"/>
+                <button name="action_reset_packing"
+                        string="Reset Packing"
+                        type="object"
+                        invisible="state not in ['assigned', 'confirmed'] or picking_type_code != 'outgoing' or not display_package_ids"
+                        groups="stock.group_stock_user"/>
+            </xpath>
+            <xpath expr="//page[@name='note']" position="after">
+                <page name="packaging" string="Packaging" invisible="picking_type_code != 'outgoing' or not package_ids">
+                    <group>
+                        <field name="package_ids" string="Total Boxes" widget="statinfo"/>
+                    </group>
+                    <div class="mt-2">
+                        <field name="packages_summary_html" readonly="1" nolabel="1"/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
