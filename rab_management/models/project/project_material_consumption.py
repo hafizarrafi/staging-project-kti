@@ -735,3 +735,27 @@ class ProjectMaterialConsumptionSummary(models.Model):
         lines_to_unselect = self.consumption_id.line_ids.filtered(lambda l: l.product_id == self.product_id)
         lines_to_unselect.write({'is_selected': False})
         self.unlink()
+
+
+class ProjectProject(models.Model):
+    _inherit = 'project.project'
+
+    def action_view_stock_management(self):
+        self.ensure_one()
+        # Find or create singleton dashboard for this project
+        dashboard = self.env['project.material.consumption'].search([('project_id', '=', self.id)], limit=1)
+        if not dashboard:
+            dashboard = self.env['project.material.consumption'].create({'project_id': self.id})
+        
+        # Refresh lines to ensure they match task requirements
+        dashboard.action_refresh_requirements()
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Stock Management',
+            'res_model': 'project.material.consumption',
+            'res_id': dashboard.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+

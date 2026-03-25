@@ -112,14 +112,16 @@ class ProjectProject(models.Model):
         AccountMoveLine = self.env['account.move.line']
         for rec in self:
             material_product_ids = rec.material_master_ids.product_id.ids
-            if not material_product_ids or not rec.purchase_order_ids:
+            # Grab all POs linked directly or via RAB
+            po_records = rec.purchase_order_ids | self.env['purchase.order'].search([('rab_id.project_id', '=', rec.id)])
+            if not material_product_ids or not po_records:
                 rec.aktual_material = 0.0
                 continue
 
             bill_lines = AccountMoveLine.search([
                 ('move_id.move_type', '=', 'in_invoice'),
                 ('move_id.state', '=', 'posted'),
-                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('purchase_line_id.order_id', 'in', po_records.ids),
                 ('product_id', 'in', material_product_ids),
             ])
             rec.aktual_material = sum(bill_lines.mapped('price_subtotal'))
@@ -129,14 +131,16 @@ class ProjectProject(models.Model):
         AccountMoveLine = self.env['account.move.line']
         for rec in self:
             equipment_product_ids = rec.equipment_master_ids.product_id.ids
-            if not equipment_product_ids or not rec.purchase_order_ids:
+            # Grab all POs linked directly or via RAB
+            po_records = rec.purchase_order_ids | self.env['purchase.order'].search([('rab_id.project_id', '=', rec.id)])
+            if not equipment_product_ids or not po_records:
                 rec.aktual_equipment = 0.0
                 continue
 
             bill_lines = AccountMoveLine.search([
                 ('move_id.move_type', '=', 'in_invoice'),
                 ('move_id.state', '=', 'posted'),
-                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('purchase_line_id.order_id', 'in', po_records.ids),
                 ('product_id', 'in', equipment_product_ids),
             ])
             rec.aktual_equipment = sum(bill_lines.mapped('price_subtotal'))
@@ -169,14 +173,15 @@ class ProjectProject(models.Model):
                 rec.kawat_las_product_id.id,
                 rec.rewelding_product_id.id,
             ]))
-            if not product_ids or not rec.purchase_order_ids:
+            po_records = rec.purchase_order_ids | self.env['purchase.order'].search([('rab_id.project_id', '=', rec.id)])
+            if not product_ids or not po_records:
                 rec.aktual_kawat_las = 0.0
                 continue
 
             bill_lines = AccountMoveLine.search([
                 ('move_id.move_type', '=', 'in_invoice'),
                 ('move_id.state', '=', 'posted'),
-                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('purchase_line_id.order_id', 'in', po_records.ids),
                 ('product_id', 'in', product_ids),
             ])
             rec.aktual_kawat_las = sum(bill_lines.mapped('price_subtotal'))
@@ -185,7 +190,11 @@ class ProjectProject(models.Model):
     def _compute_aktual_by_category(self):
         AccountMoveLine = self.env['account.move.line']
         for rec in self:
-            if not rec.purchase_order_ids:
+            po_records = rec.purchase_order_ids | self.env['purchase.order'].search([('rab_id.project_id', '=', rec.id)])
+            if not po_records:
+                rec.aktual_manpower = 0.0
+                rec.aktual_operasional = 0.0
+                rec.aktual_mobdemob = 0.0
                 rec.aktual_oksigen = 0.0
                 rec.aktual_lpg = 0.0
                 continue
@@ -193,7 +202,7 @@ class ProjectProject(models.Model):
             bill_lines = AccountMoveLine.search([
                 ('move_id.move_type', '=', 'in_invoice'),
                 ('move_id.state', '=', 'posted'),
-                ('purchase_line_id.order_id', 'in', rec.purchase_order_ids.ids),
+                ('purchase_line_id.order_id', 'in', po_records.ids),
                 ('product_id.category_project', 'in', ['manpower', 'operasional', 'mobdemob', 'oksigen', 'lpg']),
             ])
             rec.aktual_manpower = sum(

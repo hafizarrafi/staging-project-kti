@@ -314,6 +314,8 @@
                     icon="fa-list-alt" invisible="all_rab_count == 0">
                     <field string="Daftar RAB" name="all_rab_count" widget="statinfo"/>
                 </button>
+                <button class="oe_stat_button" type="object" name="action_view_stock_management"
+                    icon="fa-archive" string="Stock Management"/>
             </xpath>
 
            <xpath expr="//page[@name='material_project']" position="after">

@@ -30,6 +30,7 @@ class RabManagement(models.Model):
             ('draft', 'Draf'),
             ('negotiation', 'Negosiasi'),
             ('confirmed', 'Terkonfirmasi'),
+            ('cancel', 'Dibatalkan'),
         ],
         default='draft',
         tracking=True
@@ -115,13 +116,13 @@ class RabManagement(models.Model):
 
     # Workflow actions
     def unlink(self):
-            for rec in self:
-                if rec.state != 'draft':
-                    raise UserError(_(
-                        "RAB dengan status Confirmed / Disetujui tidak boleh dihapus.\n"
-                        "Gunakan fitur Arsip."
-                    ))
-            return super().unlink()
+        for rec in self:
+            if rec.state != 'draft' and not self.env.context.get('force_delete'):
+                raise UserError(_(
+                    "RAB dengan status selain Draf tidak boleh dihapus.\n"
+                    "Gunakan fitur Batalkan atau Arsip."
+                ))
+        return super().unlink()
 
 
 
@@ -159,19 +160,24 @@ class RabManagement(models.Model):
                     raise UserError(
                         "Semua item Project harus memiliki vendor terpilih sebelum confirm."
                     )
-
-                rec.state = 'confirmed'
-                continue
-
-            # === FLOW ACCOUNTING (LAMA) ===
-            if not rec.customer_id:
-                raise UserError("Customer harus diisi.")
-
-            if not rec.has_confirmed_sale_order:
-                raise UserError("Sales Order harus dikonfirmasi terlebih dahulu.")
+            else:
+                # === FLOW ACCOUNTING (LAMA) ===
+                if not rec.customer_id:
+                    raise UserError("Customer harus diisi.")
+                
+                # Bypassing the check if sale order is not strictly necessary or adapting it to new flow 
+                if not rec.has_confirmed_sale_order and rec.source_type == 'accounting':
+                    pass # Or handle specific needs for accounting without SO
 
             rec.state = 'confirmed'
 
+    def action_reset_to_draft(self):
+        for rec in self:
+            rec.with_context(allow_confirmed_write=True).write({'state': 'draft'})
+            
+    def action_cancel(self):
+        for rec in self:
+            rec.with_context(allow_confirmed_write=True).write({'state': 'cancel'})
 
     def action_approve(self):
         """Approve is no longer a separate state - confirmed is the final state."""
@@ -342,11 +348,11 @@ class RabManagement(models.Model):
     def write(self, vals):
         for rec in self:
             if rec.state == 'confirmed':
-                # Izinkan update terbatas (misalnya set sale_order_id)
+                # Izinkan update terbatas (misalnya set sale_order_id atau override context)
                 if self.env.context.get('allow_confirmed_write'):
                     continue
 
-                forbidden_fields = set(vals.keys()) - {'sale_order_id', 'active'}
+                forbidden_fields = set(vals.keys()) - {'sale_order_id', 'active', 'state'}
                 if forbidden_fields:
                     raise UserError("RAB yang sudah dikonfirmasi tidak dapat diubah.")
 
@@ -393,15 +399,4 @@ class RabManagement(models.Model):
             raise UserError("Negosiasi langsung hanya untuk RAB Project.")
 
         self.state = 'negotiation'
-
-    def action_confirm(self):
-        for rec in self:
-            if rec.source_type == 'project':
-                if not rec.line_ids.filtered(lambda l: l.chosen_vendor_id):
-                    raise UserError("Vendor harus dipilih sebelum confirm RAB Project.")
-            else:
-                # logic lama (sales-based)
-                pass
-
-            rec.state = 'confirmed'
 

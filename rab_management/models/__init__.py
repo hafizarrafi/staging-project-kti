@@ -6,3 +6,4 @@ from . import product
 from . import saleorder
 from . import purchaseorder
 from . import inventory
+from . import purchase

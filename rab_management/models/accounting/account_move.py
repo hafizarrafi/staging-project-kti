@@ -26,7 +26,12 @@ class AccountMove(models.Model):
                 ('move_id', 'in', vendor_bills.ids),
                 ('purchase_line_id', '!=', False),
             ])
-            projects = po_lines.purchase_line_id.order_id.project_id.filtered('id')
+            
+            # Find projects from PO directly or via RAB
+            projects = po_lines.purchase_line_id.order_id.mapped('project_id')
+            projects |= po_lines.purchase_line_id.order_id.mapped('rab_id.project_id')
+            projects = projects.filtered('id')
+            
             if projects:
                 projects._compute_aktual_material()
                 projects._compute_aktual_equipment()

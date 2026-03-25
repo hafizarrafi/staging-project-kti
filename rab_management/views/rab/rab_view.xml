@@ -78,6 +78,20 @@
                                 class="oe_highlight"
                                 invisible="state != 'draft'"/>
 
+                        <button name="action_reset_to_draft"
+                                type="object"
+                                string="Kembali ke Draf"
+                                class="btn-secondary"
+                                invisible="state not in ['confirmed', 'cancel']"
+                                confirm="Kembalikan dokumen ini ke status Draf?"/>
+
+                        <button name="action_cancel"
+                                type="object"
+                                string="Batalkan RAB"
+                                class="btn-secondary"
+                                invisible="state != 'confirmed'"
+                                confirm="Anda yakin ingin membatalkan RAB ini?"/>
+
                         <button name="action_create_sale_order"
                                 type="object"
                                 string="Buat Penawaran"
